@@ -217,8 +217,7 @@ The QNAMEs of DNS Queries is specified `-b` option argument, The QTYPE and QCLAS
 
 ### Example of QNAME
 
-If `fuzz_client` contains `-b example.com` option, QNAMEs of DNS Queries is following, 
- `-b example.com`を指定すると、以下のようにQNAMEを生成します。
+If `fuzz_client` contains `-b example.com` option, generates following QNAMEs.
 
 * example.com
 * www.example.com
@@ -256,5 +255,3 @@ keygen.sh <domain> <algorithm>
 ```
 $ ./keygen.sh example.com RSASHA256
 ```
-
-
