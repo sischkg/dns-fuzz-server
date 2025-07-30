@@ -233,7 +233,7 @@ namespace dns
      *******************************************************************************************/
     std::shared_ptr<PublicKey> RSAPrivateKeyImp::getPublicKey() const
     {
-	RSA* r = EVP_PKEY_get0_RSA( getPrivateKey() );
+	const RSA* r = EVP_PKEY_get0_RSA( getPrivateKey() );
 	const BIGNUM *modulus, *public_exponent, *private_exponent;
 
 	RSA_get0_key( r, &modulus, &public_exponent, &private_exponent );
@@ -263,10 +263,10 @@ namespace dns
             throwException( "EVP_DigestFinal failed" );
 	digest.resize( digest_length );
 
-	RSA* rsa = EVP_PKEY_get0_RSA( getPrivateKey() );
+	const RSA* rsa = EVP_PKEY_get0_RSA( getPrivateKey() );
 	unsigned int signature_length = RSA_size( rsa );
 	signature.resize( signature_length );
-	int result = RSA_sign( mHashAlgorithm, &digest[0], digest_length, &signature[0], &signature_length, rsa );
+	int result = RSA_sign( mHashAlgorithm, &digest[0], digest_length, &signature[0], &signature_length, const_cast<RSA *>( rsa ) );
 
 	if ( result != 1 ) {
 	    throwException( "RSA_sign failed" );
