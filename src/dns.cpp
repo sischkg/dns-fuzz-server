@@ -2238,6 +2238,9 @@ namespace dns
             case OPT_EXTEND_ERROR:
                 BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: parse ExtendedDNSError";
                 options.push_back( ExtendedErrorOption::parse( pos, pos + option_size ) );
+            case OPT_ERROR_REPORTING:
+                BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: parse ErrorReporting";
+                options.push_back( ErrorReportingOption::parse( pos, pos + option_size ) );
             default:
                 BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: unknown option " << option_code;
                 break;
