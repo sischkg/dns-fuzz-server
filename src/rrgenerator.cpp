@@ -851,6 +851,21 @@ namespace dns
         return std::shared_ptr<OptPseudoRROption>( new KeyTagOption( tags ) );
     }
 
+    std::shared_ptr<OptPseudoRROption> ExtendedErrorGenerator::generate( const MessageInfo &hint )
+    {
+        return generate();
+    }
+
+    std::shared_ptr<OptPseudoRROption> ExtendedErrorGenerator::generate()
+    {
+        uint16_t    text_size = getRandom( 0xffff );
+        std::string text;
+        for ( uint32_t i = 0; i < text_size; i++ ) {
+            text.push_back( (uint8_t)getRandom( 0xff ) );
+        }
+        return std::shared_ptr<OptPseudoRROption>( new ExtendedErrorOption( (uint16_t)getRandom( 0xffff ), text ) );
+    }
+
     /**********************************************************
      * OptionGenarator
      **********************************************************/
@@ -862,6 +877,7 @@ namespace dns
         mGenerators.push_back( std::shared_ptr<OptGeneratable>( new CookieGenerator ) );
         mGenerators.push_back( std::shared_ptr<OptGeneratable>( new TCPKeepaliveGenerator ) );
         mGenerators.push_back( std::shared_ptr<OptGeneratable>( new KeyTagGenerator ) );
+        mGenerators.push_back( std::shared_ptr<OptGeneratable>( new ExtendedErrorGenerator ) );
     }
 
 
