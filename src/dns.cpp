@@ -2235,6 +2235,9 @@ namespace dns
             case OPT_KEY_TAG:
                 BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: parse KEYTAG";
                 options.push_back( KeyTagOption::parse( pos, pos + option_size ) );
+            case OPT_EXTEND_ERROR:
+                BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: parse ExtendedDNSError";
+                options.push_back( ExtendedErrorOption::parse( pos, pos + option_size ) );
             default:
                 BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: unknown option " << option_code;
                 break;
