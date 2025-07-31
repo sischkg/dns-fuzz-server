@@ -72,6 +72,7 @@ namespace dns
     const OptType    OPT_COOKIE        = 10;
     const OptType    OPT_TCP_KEEPALIVE = 11;
     const OptType    OPT_KEY_TAG       = 14;
+    const OptType    OPT_EXTEND_ERROR  = 15;
 
     typedef uint8_t    ResponseCode;
     const ResponseCode NO_ERROR       = 0;
@@ -85,6 +86,33 @@ namespace dns
     const ResponseCode BADSIG         = 16;
     const ResponseCode BADKEY         = 17;
     const ResponseCode BADTIME        = 18;
+
+    typedef uint16_t ExtendedErrorCode;
+    const ExtendedErrorCode EDE_OTHER = 0;
+    const ExtendedErrorCode EDE_UNSUPPORTED_DNSKEY_ALGORITHM = 1;
+    const ExtendedErrorCode EDE_UNSUPPORTED_DS_DIGEST_TYPE = 2;
+    const ExtendedErrorCode EDE_STALE_ANSWER = 3;
+    const ExtendedErrorCode EDE_FORGED_ANSWER = 4;
+    const ExtendedErrorCode EDE_DNSSEC_INDETERMINATE = 5;
+    const ExtendedErrorCode EDE_DNSSEC_BOGUS = 6;
+    const ExtendedErrorCode EDE_SIGNATURE_EXPIRED = 7;
+    const ExtendedErrorCode EDE_SIGNATURE_NOT_YET_VALID = 8;
+    const ExtendedErrorCode EDE_DNSKEY_MISSING = 9;
+    const ExtendedErrorCode EDE_RRSIGS_MISSING = 10;
+    const ExtendedErrorCode EDE_NO_ZONE_KEY_BIT_SET = 11;
+    const ExtendedErrorCode EDE_NSEC_MISSING = 12;
+    const ExtendedErrorCode EDE_CACHED_ERROR = 13;
+    const ExtendedErrorCode EDE_NOT_READY = 14;
+    const ExtendedErrorCode EDE_BLOCKED = 15;
+    const ExtendedErrorCode EDE_CENSORED = 16;
+    const ExtendedErrorCode EDE_FILTERED = 17;
+    const ExtendedErrorCode EDE_PROHIBITED = 18;
+    const ExtendedErrorCode EDE_STAKE_NXDOMAIN_ANSWER = 19;
+    const ExtendedErrorCode EDE_NOT_AUTHORITATIVE = 20;
+    const ExtendedErrorCode EDE_NOT_SUPPORTED = 21;
+    const ExtendedErrorCode EDE_NOT_REACHABLE_AUTHORITY = 22;
+    const ExtendedErrorCode EDE_NETWORK_ERROR = 23;
+    const ExtendedErrorCode EDE_INVALID_DATA = 24;
 
     class RDATA;
     typedef std::shared_ptr<RDATA> RDATAPtr;
@@ -1299,6 +1327,35 @@ namespace dns
         static OptPseudoRROptPtr parse( const uint8_t *begin, const uint8_t *end );
     };
 
+    class ExtendedErrorOption : public OptPseudoRROption
+    {
+    private:
+        ExtendedErrorCode mErrorCode;
+        std::string mExtraText;
+
+    public:
+        ExtendedErrorOption( ExtendedErrorCode c, std::string text )
+            : mErrorCode( c ), mExtraText(text)
+        {
+        }
+
+        virtual std::string toString() const;
+        virtual void        outputWireFormat( WireFormat & ) const;
+        virtual uint16_t    code() const
+        {
+            return OPT_EXTEND_ERROR;
+        }
+    	virtual ExtendedErrorOption *clone() const
+	    {
+	        return new ExtendedErrorOption( mErrorCode, mExtraText );
+    	}
+        virtual uint16_t size() const;
+
+        uint16_t getErrorCode() const { return mErrorCode; }
+        std::string getExtraText() const { return mExtraText; }
+
+        static OptPseudoRROptPtr parse( const uint8_t *begin, const uint8_t *end );
+    };
 
     class RecordOptionsData : public RDATA
     {

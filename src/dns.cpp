@@ -2472,6 +2472,45 @@ namespace dns
         return OptPseudoRROptPtr( new KeyTagOption( tags ) );
     }
 
+    std::string ExtendedErrorOption::toString() const
+    {
+        std::ostringstream os;
+        os << "Error Code: " << mErrorCode << ", Extra Text: " << mExtraText;
+        return os.str();
+    }
+
+    uint16_t ExtendedErrorOption::size() const
+    {
+        return 2 + mExtraText.size();
+    }
+
+    void ExtendedErrorOption::outputWireFormat( WireFormat &message ) const
+    {
+        message.pushUInt16HtoN( OPT_EXTEND_ERROR );
+        message.pushUInt16HtoN( mErrorCode );
+        message.pushBuffer( mExtraText );
+    }
+
+    OptPseudoRROptPtr ExtendedErrorOption::parse( const uint8_t *begin, const uint8_t *end )
+    {
+        const uint8_t *pos = begin;
+        uint16_t size = end - begin;
+        if ( size < 2 )
+            throw FormatError( "bad option length for ExtendErrorOption" );
+        uint16_t code;
+        std::string text;
+
+        code = ntohs( get_bytes<uint16_t>( &pos ) );
+        size -= 2;
+
+        for ( uint16_t i = 0 ; i < size ; i++ ) {
+            text.push_back( get_bytes<uint8_t>( &pos ) );
+        }
+            
+        return OptPseudoRROptPtr( new ExtendedErrorOption( code, text ) );
+    }
+
+
     std::string RecordTKEY::toZone() const
     {
         return "";
