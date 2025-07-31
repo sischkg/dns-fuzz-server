@@ -160,7 +160,6 @@ namespace dns
         return g.generate();
     }
 
-
     Domainname getDomainname( const MessageInfo &hint )
     {
         std::vector<Domainname> names;
@@ -866,6 +865,18 @@ namespace dns
         return std::shared_ptr<OptPseudoRROption>( new ExtendedErrorOption( (uint16_t)getRandom( 0xffff ), text ) );
     }
 
+    std::shared_ptr<OptPseudoRROption> ErrorReportingGenerator::generate( const MessageInfo &hint )
+    {
+        Domainname agent_domain = getDomainname( hint );
+        std::shared_ptr<OptPseudoRROption>( new ErrorReportingOption( agent_domain ) );
+    }
+
+    std::shared_ptr<OptPseudoRROption> ErrorReportingGenerator::generate()
+    {
+        Domainname agent_domain = generateDomainname();
+        std::shared_ptr<OptPseudoRROption>( new ErrorReportingOption( agent_domain ) );
+    }
+
     /**********************************************************
      * OptionGenarator
      **********************************************************/
@@ -878,6 +889,7 @@ namespace dns
         mGenerators.push_back( std::shared_ptr<OptGeneratable>( new TCPKeepaliveGenerator ) );
         mGenerators.push_back( std::shared_ptr<OptGeneratable>( new KeyTagGenerator ) );
         mGenerators.push_back( std::shared_ptr<OptGeneratable>( new ExtendedErrorGenerator ) );
+        mGenerators.push_back( std::shared_ptr<OptGeneratable>( new ErrorReportingGenerator ) );
     }
 
 

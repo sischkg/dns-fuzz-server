@@ -280,6 +280,13 @@ namespace dns
         virtual std::shared_ptr<OptPseudoRROption> generate();
     };
 
+    class ErrorReportingGenerator : public OptGeneratable
+    {
+    public:
+        virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
+        virtual std::shared_ptr<OptPseudoRROption> generate();
+    };
+
     class OptionGenerator
     {
     public:
