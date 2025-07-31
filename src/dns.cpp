@@ -2547,6 +2547,34 @@ namespace dns
         return OptPseudoRROptPtr( new ExtendedErrorOption( code, text ) );
     }
 
+    std::string ErrorReportingOption::toString() const
+    {
+        std::ostringstream os;
+        os << "Agent Domain: " << mAgentDomain;
+        return os.str();
+    }
+
+    uint16_t ErrorReportingOption::size() const
+    {
+        return mAgentDomain.size();
+    }
+
+    void ErrorReportingOption::outputWireFormat( WireFormat &message ) const
+    {
+        message.pushUInt16HtoN( OPT_ERROR_REPORTING );
+        mAgentDomain.outputWireFormat( message );
+    }
+
+    OptPseudoRROptPtr ErrorReportingOption::parse( const uint8_t *begin, const uint8_t *end )
+    {
+        const uint8_t *pos  = begin;
+        uint16_t       size = end - begin;
+
+        Domainname agent_domain;
+        Domainname::parsePacket( agent_domain, begin, end, begin );
+
+        return OptPseudoRROptPtr( new ErrorReportingOption( agent_domain ) );
+    }
 
     std::string RecordTKEY::toZone() const
     {

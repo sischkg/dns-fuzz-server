@@ -67,12 +67,13 @@ namespace dns
     typedef int32_t TTL;
 
     typedef uint16_t OptType;
-    const OptType    OPT_NSID          = 3;
-    const OptType    OPT_CLIENT_SUBNET = 8;
-    const OptType    OPT_COOKIE        = 10;
-    const OptType    OPT_TCP_KEEPALIVE = 11;
-    const OptType    OPT_KEY_TAG       = 14;
-    const OptType    OPT_EXTEND_ERROR  = 15;
+    const OptType    OPT_NSID            = 3;
+    const OptType    OPT_CLIENT_SUBNET   = 8;
+    const OptType    OPT_COOKIE          = 10;
+    const OptType    OPT_TCP_KEEPALIVE   = 11;
+    const OptType    OPT_KEY_TAG         = 14;
+    const OptType    OPT_EXTEND_ERROR    = 15;
+    const OptType    OPT_ERROR_REPORTING = 18;
 
     typedef uint8_t    ResponseCode;
     const ResponseCode NO_ERROR       = 0;
@@ -1568,6 +1569,36 @@ namespace dns
         std::string getExtraText() const
         {
             return mExtraText;
+        }
+
+        static OptPseudoRROptPtr parse( const uint8_t *begin, const uint8_t *end );
+    };
+
+    class ErrorReportingOption : public OptPseudoRROption
+    {
+    private:
+        Domainname mAgentDomain;
+
+    public:
+        ErrorReportingOption( const Domainname &agent_domain ) : mAgentDomain( agent_domain )
+        {
+        }
+
+        virtual std::string toString() const;
+        virtual void        outputWireFormat( WireFormat & ) const;
+        virtual uint16_t    code() const
+        {
+            return OPT_EXTEND_ERROR;
+        }
+        virtual ErrorReportingOption *clone() const
+        {
+            return new ErrorReportingOption( mAgentDomain );
+        }
+        virtual uint16_t size() const;
+
+        const Domainname getAgentDomain()
+        {
+            return mAgentDomain;
         }
 
         static OptPseudoRROptPtr parse( const uint8_t *begin, const uint8_t *end );
