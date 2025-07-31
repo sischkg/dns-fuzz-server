@@ -15,17 +15,18 @@ namespace dns
     class RandomGenerator : private boost::noncopyable
     {
     public:
-	uint32_t rand( uint32_t = 0xffffffff );
+        uint32_t             rand( uint32_t = 0xffffffff );
         std::vector<uint8_t> randStream( unsigned int );
         std::vector<uint8_t> randSizeStream( unsigned int );
 
-	static RandomGenerator *getInstance();
+        static RandomGenerator *getInstance();
+
     private:
         static RandomGenerator *mInstance;
         RandomGenerator();
 
         boost::mt19937 mGenerator;
-        boost::mutex mMutex;
+        boost::mutex   mMutex;
     };
 
 
@@ -50,14 +51,14 @@ namespace dns
     {
         if ( ratio < 0 || ratio > 1 )
             throw std::logic_error( "invalid ratio of change" );
-        return getRandom( 0xffff ) < 0xffff * ratio; 
+        return getRandom( 0xffff ) < 0xffff * ratio;
     }
 
     class DomainnameGenerator
     {
     public:
-        Domainname generate( const Domainname &hint1, const Domainname &hint2 );
-        Domainname generate();
+        Domainname  generate( const Domainname &hint1, const Domainname &hint2 );
+        Domainname  generate();
         std::string generateLabel();
     };
 
@@ -66,9 +67,11 @@ namespace dns
     class RDATAGeneratable
     {
     public:
-        virtual ~RDATAGeneratable() {}
+        virtual ~RDATAGeneratable()
+        {
+        }
         virtual std::shared_ptr<RDATA> generate( const MessageInfo &hint1, const Domainname &hint2 ) = 0;
-        virtual std::shared_ptr<RDATA> generate() = 0;
+        virtual std::shared_ptr<RDATA> generate()                                                    = 0;
     };
 
     class ResourceRecordGenerator
@@ -89,7 +92,7 @@ namespace dns
         std::shared_ptr<RDATA> generate();
     };
 
-    template <class T> 
+    template <class T>
     class XNameGenerator : public RDATAGeneratable
     {
     public:
@@ -100,7 +103,7 @@ namespace dns
     typedef XNameGenerator<RecordNS>    NSGenerator;
     typedef XNameGenerator<RecordCNAME> CNAMEGenerator;
     typedef XNameGenerator<RecordDNAME> DNAMEGenerator;
-    
+
     class AGenerator : public RDATAGeneratable
     {
     public:
@@ -135,7 +138,7 @@ namespace dns
         std::shared_ptr<RDATA> generate( const MessageInfo &hint1, const Domainname &hint2 );
         std::shared_ptr<RDATA> generate();
     };
-    
+
     class RRSIGGenerator : public RDATAGeneratable
     {
     public:
@@ -223,51 +226,51 @@ namespace dns
     class OptGeneratable
     {
     public:
-	virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint ) = 0;
-	virtual std::shared_ptr<OptPseudoRROption> generate() = 0;
+        virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint ) = 0;
+        virtual std::shared_ptr<OptPseudoRROption> generate()                          = 0;
     };
 
     class RawOptionGenerator : public OptGeneratable
     {
     public:
-	virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
-	virtual std::shared_ptr<OptPseudoRROption> generate();
+        virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
+        virtual std::shared_ptr<OptPseudoRROption> generate();
     };
 
     class NSIDGenerator : public OptGeneratable
     {
     public:
-	virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
-	virtual std::shared_ptr<OptPseudoRROption> generate();
+        virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
+        virtual std::shared_ptr<OptPseudoRROption> generate();
     };
 
     class ClientSubnetGenerator : public OptGeneratable
     {
     public:
-	virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
-	virtual std::shared_ptr<OptPseudoRROption> generate();
+        virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
+        virtual std::shared_ptr<OptPseudoRROption> generate();
     };
 
 
     class CookieGenerator : public OptGeneratable
     {
     public:
-	virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
-	virtual std::shared_ptr<OptPseudoRROption> generate();
+        virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
+        virtual std::shared_ptr<OptPseudoRROption> generate();
     };
 
     class TCPKeepaliveGenerator : public OptGeneratable
     {
     public:
-	virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
-	virtual std::shared_ptr<OptPseudoRROption> generate();
+        virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
+        virtual std::shared_ptr<OptPseudoRROption> generate();
     };
 
     class KeyTagGenerator : public OptGeneratable
     {
     public:
-	virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
-	virtual std::shared_ptr<OptPseudoRROption> generate();
+        virtual std::shared_ptr<OptPseudoRROption> generate( const MessageInfo &hint );
+        virtual std::shared_ptr<OptPseudoRROption> generate();
     };
 
     class OptionGenerator
@@ -275,11 +278,12 @@ namespace dns
     public:
         OptionGenerator();
 
-	void generate( MessageInfo &packet );
+        void generate( MessageInfo &packet );
+
     private:
         std::vector<std::shared_ptr<OptGeneratable>> mGenerators;
     };
 
-}
+} // namespace dns
 
 #endif
