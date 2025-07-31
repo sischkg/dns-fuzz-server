@@ -3,13 +3,13 @@
 #include <algorithm>
 #include <arpa/inet.h>
 #include <boost/lexical_cast.hpp>
+#include <boost/log/trivial.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/log/trivial.hpp>
 #include <cstdio>
 #include <cstring>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <iterator>
 #include <netinet/in.h>
 #include <openssl/hmac.h>
@@ -24,14 +24,16 @@
 namespace dns
 {
     void generateQuestion( const QuestionSectionEntry &q, WireFormat &message, OffsetDB &offset );
-    void generateResourceRecord( const ResourceRecord &r, WireFormat &message, OffsetDB &offset, bool compression = true );
+    void
+    generateResourceRecord( const ResourceRecord &r, WireFormat &message, OffsetDB &offset, bool compression = true );
     uint32_t getQuestionSize( const QuestionSectionEntry &q, uint32_t begin, OffsetDB &offset );
-    uint32_t getResourceRecordSize( const ResourceRecord &r, uint32_t begin, OffsetDB &offset, bool compression = true );
+    uint32_t
+    getResourceRecordSize( const ResourceRecord &r, uint32_t begin, OffsetDB &offset, bool compression = true );
     typedef std::pair<QuestionSectionEntry, const uint8_t *> QuestionSectionEntryPair;
-    typedef std::pair<ResourceRecord, const uint8_t *> ResourceRecordPair;
+    typedef std::pair<ResourceRecord, const uint8_t *>       ResourceRecordPair;
     QuestionSectionEntryPair parseQuestion( const uint8_t *begin, const uint8_t *end, const uint8_t *section );
-    ResourceRecordPair parseResourceRecord( const uint8_t *begin, const uint8_t *end, const uint8_t *section );
-    OptPseudoRecord parseOPTPseudoRecord( const ResourceRecord & );
+    ResourceRecordPair       parseResourceRecord( const uint8_t *begin, const uint8_t *end, const uint8_t *section );
+    OptPseudoRecord          parseOPTPseudoRecord( const ResourceRecord & );
 
     static const uint8_t *
     parseCharacterString( const uint8_t *begin, const uint8_t *packet_end, std::string &ref_output )
@@ -54,14 +56,14 @@ namespace dns
 
     uint16_t QuestionSectionEntry::size() const
     {
-        return mDomainname.size() + sizeof(mType) + sizeof(mClass);
+        return mDomainname.size() + sizeof( mType ) + sizeof( mClass );
     }
 
     uint32_t ResourceRecord::size() const
     {
-        return mDomainname.size() + sizeof(mType) + sizeof(mClass) + sizeof(mTTL) +
-	    sizeof(uint16_t) +       // size of resource data size
-	    mRData->size();
+        return mDomainname.size() + sizeof( mType ) + sizeof( mClass ) + sizeof( mTTL ) +
+               sizeof( uint16_t ) + // size of resource data size
+               mRData->size();
     }
 
 
@@ -115,7 +117,7 @@ namespace dns
         uint32_t pos = 0;
         OffsetDB offset_db;
 
-        pos += sizeof(PacketHeaderField);
+        pos += sizeof( PacketHeaderField );
 
         std::vector<ResourceRecord> additional = mAdditionalSection;
 
@@ -147,16 +149,16 @@ namespace dns
 
     void MessageInfo::addOption( std::shared_ptr<OptPseudoRROption> opt )
     {
-	std::dynamic_pointer_cast<RecordOptionsData>( mOptPseudoRR.mOptions )->add( opt );
+        std::dynamic_pointer_cast<RecordOptionsData>( mOptPseudoRR.mOptions )->add( opt );
     }
-    
+
     MessageInfo parseDNSMessage( const uint8_t *begin, const uint8_t *end )
     {
-	BOOST_LOG_TRIVIAL(trace) << "dns.message.parse: parse message ";
-	
+        BOOST_LOG_TRIVIAL( trace ) << "dns.message.parse: parse message ";
+
         const uint8_t *packet = begin;
 
-        if ( ( end - begin ) < sizeof(PacketHeaderField) ) {
+        if ( ( end - begin ) < sizeof( PacketHeaderField ) ) {
             throw FormatError( "too short message size( less than DNS message header size )." );
         }
 
@@ -179,12 +181,11 @@ namespace dns
         int authority_count             = ntohs( header->authority_count );
         int additional_infomation_count = ntohs( header->additional_infomation_count );
 
-	BOOST_LOG_TRIVIAL(trace)
-	    << "dns.domainname.parse: "
-	    << "qd: " << question_count  << ", "
-	    << "ad: " << answer_count    << ", "
-	    << "ns: " << authority_count << ", "
-	    << "ar: " << additional_infomation_count;
+        BOOST_LOG_TRIVIAL( trace ) << "dns.domainname.parse: "
+                                   << "qd: " << question_count << ", "
+                                   << "ad: " << answer_count << ", "
+                                   << "ns: " << authority_count << ", "
+                                   << "ar: " << additional_infomation_count;
 
         packet += sizeof( PacketHeaderField );
         for ( int i = 0; i < question_count; i++ ) {
@@ -205,14 +206,13 @@ namespace dns
         for ( int i = 0; i < additional_infomation_count; i++ ) {
             ResourceRecordPair pair = parseResourceRecord( begin, end, packet );
             if ( pair.first.mType == TYPE_OPT ) {
-                packet_info.mIsEDNS0 = true;
-		packet_info.mOptPseudoRR.mDomainname  = pair.first.mDomainname;
-		packet_info.mOptPseudoRR.mPayloadSize = pair.first.mClass;
-		packet_info.mOptPseudoRR.mRCode       = ( 0xff000000 & pair.first.mTTL ) >> 24;
-		packet_info.mOptPseudoRR.mVersion     = ( 0x00ff0000 & pair.first.mTTL ) >> 16;
-		packet_info.mOptPseudoRR.mDOBit       = ( 0x00008000 & pair.first.mTTL ) ? true : false;
-		packet_info.mOptPseudoRR.mOptions     = pair.first.mRData;
-		
+                packet_info.mIsEDNS0                  = true;
+                packet_info.mOptPseudoRR.mDomainname  = pair.first.mDomainname;
+                packet_info.mOptPseudoRR.mPayloadSize = pair.first.mClass;
+                packet_info.mOptPseudoRR.mRCode       = ( 0xff000000 & pair.first.mTTL ) >> 24;
+                packet_info.mOptPseudoRR.mVersion     = ( 0x00ff0000 & pair.first.mTTL ) >> 16;
+                packet_info.mOptPseudoRR.mDOBit       = ( 0x00008000 & pair.first.mTTL ) ? true : false;
+                packet_info.mOptPseudoRR.mOptions     = pair.first.mRData;
             }
             if ( pair.first.mType == TYPE_TSIG && pair.first.mClass == CLASS_IN ) {
                 packet_info.mIsTSIG = true;
@@ -235,13 +235,13 @@ namespace dns
     uint32_t getQuestionSize( const QuestionSectionEntry &question, uint32_t begin, OffsetDB &offset_db )
     {
         uint32_t domainname_size = offset_db.getOutputWireFormatSize( question.mDomainname, begin );
-        return domainname_size + 2 + 2;  // domainname + type + class 
+        return domainname_size + 2 + 2; // domainname + type + class
     }
 
     QuestionSectionEntryPair parseQuestion( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *p )
     {
         QuestionSectionEntry question;
-        const uint8_t *      pos = Domainname::parsePacket( question.mDomainname, packet_begin, packet_end, p );
+        const uint8_t       *pos = Domainname::parsePacket( question.mDomainname, packet_begin, packet_end, p );
 
         question.mType  = ntohs( get_bytes<uint16_t>( &pos ) );
         question.mClass = ntohs( get_bytes<uint16_t>( &pos ) );
@@ -249,7 +249,8 @@ namespace dns
         return QuestionSectionEntryPair( question, pos );
     }
 
-    void generateResourceRecord( const ResourceRecord &response, WireFormat &message, OffsetDB &offset_db, bool compression )
+    void
+    generateResourceRecord( const ResourceRecord &response, WireFormat &message, OffsetDB &offset_db, bool compression )
     {
         if ( compression )
             offset_db.outputWireFormat( response.mDomainname, message );
@@ -271,26 +272,26 @@ namespace dns
         }
     }
 
-    uint32_t getResourceRecordSize( const ResourceRecord &response, uint32_t begin, OffsetDB &offset_db, bool compression )
+    uint32_t
+    getResourceRecordSize( const ResourceRecord &response, uint32_t begin, OffsetDB &offset_db, bool compression )
     {
         uint32_t size = 0;
         uint32_t pos  = begin;
-        
+
         if ( compression ) {
             size = offset_db.getOutputWireFormatSize( response.mDomainname, pos );
             pos += size;
-        }
-        else {
+        } else {
             size = response.mDomainname.size();
             pos += size;
         }
-        
+
         size += ( 2 + 2 + 4 ); // Type + Class + TTL
-        pos  += ( 2 + 2 + 4 ); // Type + Class + TTL
- 
+        pos += ( 2 + 2 + 4 );  // Type + Class + TTL
+
         if ( response.mRData ) {
             size += 2; // rdata size
-            pos  += 2; // rdata size
+            pos += 2;  // rdata size
 
             uint32_t rdata_size = 0;
             if ( compression )
@@ -298,28 +299,29 @@ namespace dns
             else
                 rdata_size = response.mRData->size();
             size += rdata_size;
-            pos  += rdata_size;
+            pos += rdata_size;
         } else {
             size += 2;
-            pos  += 2;
+            pos += 2;
         }
 
         return size;
     }
 
-    ResourceRecordPair parseResourceRecord( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *section_begin )
+    ResourceRecordPair
+    parseResourceRecord( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *section_begin )
     {
-	BOOST_LOG_TRIVIAL(trace) << "dns.rr.parse: parse resource record";
+        BOOST_LOG_TRIVIAL( trace ) << "dns.rr.parse: parse resource record";
 
         ResourceRecord sec;
 
         const uint8_t *pos   = Domainname::parsePacket( sec.mDomainname, packet_begin, packet_end, section_begin );
-        sec.mType  = ntohs( get_bytes<uint16_t>( &pos ) );
-        sec.mClass = ntohs( get_bytes<uint16_t>( &pos ) );
-        sec.mTTL   = ntohl( get_bytes<uint32_t>( &pos ) );
+        sec.mType            = ntohs( get_bytes<uint16_t>( &pos ) );
+        sec.mClass           = ntohs( get_bytes<uint16_t>( &pos ) );
+        sec.mTTL             = ntohl( get_bytes<uint32_t>( &pos ) );
         uint16_t data_length = ntohs( get_bytes<uint16_t>( &pos ) );
 
-	BOOST_LOG_TRIVIAL(trace) << "dns.rr.parse: parse " << typeCodeToString( sec.mType ) << " resource record";
+        BOOST_LOG_TRIVIAL( trace ) << "dns.rr.parse: parse " << typeCodeToString( sec.mType ) << " resource record";
         RDATAPtr parsed_data;
         switch ( sec.mType ) {
         case TYPE_A:
@@ -389,7 +391,7 @@ namespace dns
         }
         pos += data_length;
 
-	BOOST_LOG_TRIVIAL(trace) << "dns.rr.parse: parsed resource record";
+        BOOST_LOG_TRIVIAL( trace ) << "dns.rr.parse: parsed resource record";
 
         sec.mRData = parsed_data;
         return ResourceRecordPair( sec, pos );
@@ -397,15 +399,15 @@ namespace dns
 
     std::ostream &printHeader( std::ostream &os, const MessageInfo &packet )
     {
-        os << "ID: "                  << packet.mID << "\t"
-           << "Query/Response: "      << ( packet.mQueryResponse == 0 ? "Query" : "Response" ) << "\t"
-           << "OpCode:"               << packet.mOpcode << "\t"
+        os << "ID: " << packet.mID << "\t"
+           << "Query/Response: " << ( packet.mQueryResponse == 0 ? "Query" : "Response" ) << "\t"
+           << "OpCode:" << packet.mOpcode << "\t"
            << "Authoritative Answer:" << packet.mAuthoritativeAnswer << "\t"
-           << "Truncation: "          << packet.mTruncation << "\t"
-           << "Recursion Desired: "   << packet.mRecursionDesired << "\t"
+           << "Truncation: " << packet.mTruncation << "\t"
+           << "Recursion Desired: " << packet.mRecursionDesired << "\t"
            << "Recursion Available: " << packet.mRecursionAvailable << "\t"
-           << "Checking Disabled: "   << packet.mCheckingDisabled << "\t"
-           << "Response Code: "       << responseCodeToString( packet.mResponseCode ) << "\t";
+           << "Checking Disabled: " << packet.mCheckingDisabled << "\t"
+           << "Response Code: " << responseCodeToString( packet.mResponseCode ) << "\t";
 
         return os;
     }
@@ -574,35 +576,64 @@ namespace dns
 
     Type stringToTypeCode( const std::string &t )
     {
-        if ( t == "A" )          return TYPE_A;
-        if ( t == "AAAA" )       return TYPE_AAAA;
-        if ( t == "NS" )         return TYPE_NS;
-        if ( t == "CNAME" )      return TYPE_CNAME;
-        if ( t == "NAPTR" )      return TYPE_NAPTR;
-        if ( t == "DNAME" )      return TYPE_DNAME;
-        if ( t == "WKS" )        return TYPE_WKS;
-        if ( t == "MX" )         return TYPE_MX;
-        if ( t == "TXT" )        return TYPE_TXT;
-        if ( t == "SPF" )        return TYPE_SPF;
-        if ( t == "SOA" )        return TYPE_SOA;
-        if ( t == "SIG" )        return TYPE_SIG;
-        if ( t == "KEY" )        return TYPE_KEY;
-        if ( t == "NXT" )        return TYPE_NXT;
-        if ( t == "OPT" )        return TYPE_OPT;
-        if ( t == "DS" )         return TYPE_DS;
-        if ( t == "RRSIG" )      return TYPE_RRSIG;
-        if ( t == "DNSKEY" )     return TYPE_DNSKEY;
-        if ( t == "NSEC" )       return TYPE_NSEC;
-        if ( t == "NSEC3" )      return TYPE_NSEC3;
-        if ( t == "NSEC3PARAM" ) return TYPE_NSEC3PARAM;
-        if ( t == "TLSA" )       return TYPE_TLSA;
-        if ( t == "TSIG" )       return TYPE_TSIG;
-        if ( t == "TKEY" )       return TYPE_TKEY;
-        if ( t == "IXFR" )       return TYPE_IXFR;
-        if ( t == "AXFR" )       return TYPE_AXFR;
-        if ( t == "ANY" )        return TYPE_ANY;
-        if ( t == "CAA" )        return TYPE_CAA;
-        if ( t == "SRV" )        return TYPE_SRV;
+        if ( t == "A" )
+            return TYPE_A;
+        if ( t == "AAAA" )
+            return TYPE_AAAA;
+        if ( t == "NS" )
+            return TYPE_NS;
+        if ( t == "CNAME" )
+            return TYPE_CNAME;
+        if ( t == "NAPTR" )
+            return TYPE_NAPTR;
+        if ( t == "DNAME" )
+            return TYPE_DNAME;
+        if ( t == "WKS" )
+            return TYPE_WKS;
+        if ( t == "MX" )
+            return TYPE_MX;
+        if ( t == "TXT" )
+            return TYPE_TXT;
+        if ( t == "SPF" )
+            return TYPE_SPF;
+        if ( t == "SOA" )
+            return TYPE_SOA;
+        if ( t == "SIG" )
+            return TYPE_SIG;
+        if ( t == "KEY" )
+            return TYPE_KEY;
+        if ( t == "NXT" )
+            return TYPE_NXT;
+        if ( t == "OPT" )
+            return TYPE_OPT;
+        if ( t == "DS" )
+            return TYPE_DS;
+        if ( t == "RRSIG" )
+            return TYPE_RRSIG;
+        if ( t == "DNSKEY" )
+            return TYPE_DNSKEY;
+        if ( t == "NSEC" )
+            return TYPE_NSEC;
+        if ( t == "NSEC3" )
+            return TYPE_NSEC3;
+        if ( t == "NSEC3PARAM" )
+            return TYPE_NSEC3PARAM;
+        if ( t == "TLSA" )
+            return TYPE_TLSA;
+        if ( t == "TSIG" )
+            return TYPE_TSIG;
+        if ( t == "TKEY" )
+            return TYPE_TKEY;
+        if ( t == "IXFR" )
+            return TYPE_IXFR;
+        if ( t == "AXFR" )
+            return TYPE_AXFR;
+        if ( t == "ANY" )
+            return TYPE_ANY;
+        if ( t == "CAA" )
+            return TYPE_CAA;
+        if ( t == "SRV" )
+            return TYPE_SRV;
 
         throw std::runtime_error( "unknown type \"" + t + "\"" );
     }
@@ -610,54 +641,40 @@ namespace dns
 
     std::ostream &operator<<( std::ostream &os, const OptPseudoRecord &opt )
     {
-        os << "Domainname: "  << opt.mDomainname        << "\t"
-           << "PayloadSize: " << opt.mPayloadSize       << "\t"
-           << "RCode: "       << (uint32_t)opt.mRCode   << "\t"
-           << "Version: "     << (uint32_t)opt.mVersion << "\t"
-           << "DOBIt: "       << (uint32_t)opt.mDOBit   << "\t"
-           << "Options: "     << opt.mOptions->toString();
-            
+        os << "Domainname: " << opt.mDomainname << "\t"
+           << "PayloadSize: " << opt.mPayloadSize << "\t"
+           << "RCode: " << (uint32_t)opt.mRCode << "\t"
+           << "Version: " << (uint32_t)opt.mVersion << "\t"
+           << "DOBIt: " << (uint32_t)opt.mDOBit << "\t"
+           << "Options: " << opt.mOptions->toString();
+
         return os;
     }
 
     std::ostream &operator<<( std::ostream &os, const MessageInfo &res )
     {
-        os << "ID: "                   << res.mID << "\t"
-           << "Query/Response: "       << ( res.mQueryResponse ? "Response" : "Query" ) << "\t"
-           << "OpCode:"                << (uint32_t)res.mOpcode    << "\t"
+        os << "ID: " << res.mID << "\t"
+           << "Query/Response: " << ( res.mQueryResponse ? "Response" : "Query" ) << "\t"
+           << "OpCode:" << (uint32_t)res.mOpcode << "\t"
            << "Authoritative Answer: " << res.mAuthoritativeAnswer << "\t"
-           << "Truncation: "           << res.mTruncation          << "\t"
-           << "Recursion Desired: "    << res.mRecursionDesired    << "\t"
-           << "Recursion Available: "  << res.mRecursionAvailable  << "\t"
-           << "Checking Disabled: "    << res.mCheckingDisabled    << "\t"
-           << "Response Code: "        << responseCodeToString( res.mResponseCode ) << "\t";
+           << "Truncation: " << res.mTruncation << "\t"
+           << "Recursion Desired: " << res.mRecursionDesired << "\t"
+           << "Recursion Available: " << res.mRecursionAvailable << "\t"
+           << "Checking Disabled: " << res.mCheckingDisabled << "\t"
+           << "Response Code: " << responseCodeToString( res.mResponseCode ) << "\t";
 
         for ( auto q : res.mQuestionSection )
-            os << "Query:"                      << "\t"
-               << q.mDomainname                 << "\t"
-               << classCodeToString( q.mClass ) << "\t"
-               << typeCodeToString( q.mType )   << ", ";
+            os << "Query:" << "\t" << q.mDomainname << "\t" << classCodeToString( q.mClass ) << "\t"
+               << typeCodeToString( q.mType ) << ", ";
         for ( auto a : res.mAnswerSection )
-            os << "Answer:"                     << "\t"
-               << a.mDomainname                 << "\t"
-               << a.mTTL                        << "\t"
-               << classCodeToString( a.mClass ) << "\t"
-               << typeCodeToString( a.mType )   << "\t"
-               << a.mRData->toString()          << ", ";
+            os << "Answer:" << "\t" << a.mDomainname << "\t" << a.mTTL << "\t" << classCodeToString( a.mClass ) << "\t"
+               << typeCodeToString( a.mType ) << "\t" << a.mRData->toString() << ", ";
         for ( auto a : res.mAuthoritySection )
-            os << "Authority:"                  << "\t"
-               << a.mDomainname                 << "\t"
-               << a.mTTL                        << "\t"
-               << classCodeToString( a.mClass ) << "\t"
-               << typeCodeToString( a.mType )   << "\t"
-               << a.mRData->toString()          << ", ";
+            os << "Authority:" << "\t" << a.mDomainname << "\t" << a.mTTL << "\t" << classCodeToString( a.mClass )
+               << "\t" << typeCodeToString( a.mType ) << "\t" << a.mRData->toString() << ", ";
         for ( auto a : res.mAdditionalSection )
-            os << "Additional:"                 << "\t"
-               << a.mDomainname                 << "\t"
-               << a.mTTL                        << "\t"
-               << classCodeToString( a.mClass ) << "\t"
-               << typeCodeToString( a.mType )   << "\t"
-               << a.mRData->toString()          << ", ";
+            os << "Additional:" << "\t" << a.mDomainname << "\t" << a.mTTL << "\t" << classCodeToString( a.mClass )
+               << "\t" << typeCodeToString( a.mType ) << "\t" << a.mRData->toString() << ", ";
         if ( res.isEDNS0() ) {
             os << res.mOptPseudoRR << "\t";
         }
@@ -675,7 +692,7 @@ namespace dns
     {
         std::ostringstream os;
         os << "type: RAW(" << mRRType << "), data: ";
- 
+
         for ( unsigned int i = 0; i < mData.size(); i++ ) {
             os << std::hex << (unsigned int)mData[ i ] << " ";
         }
@@ -740,7 +757,7 @@ namespace dns
 
     std::string RecordA::getAddress() const
     {
-	return toString();
+        return toString();
     }
 
     RDATAPtr RecordA::parse( const uint8_t *begin, const uint8_t *end )
@@ -789,7 +806,7 @@ namespace dns
 
     std::string RecordAAAA::getAddress() const
     {
-	return toString();
+        return toString();
     }
 
     RDATAPtr RecordAAAA::parse( const uint8_t *begin, const uint8_t *end )
@@ -799,7 +816,7 @@ namespace dns
         return RDATAPtr( new RecordAAAA( begin ) );
     }
 
-    RecordWKS::RecordWKS( uint32_t addr, uint8_t proto, const std::vector<Type> &b  )
+    RecordWKS::RecordWKS( uint32_t addr, uint8_t proto, const std::vector<Type> &b )
         : mSinAddr( addr ), mProtocol( proto ), mBitmap( b )
     {
     }
@@ -821,8 +838,8 @@ namespace dns
                        *( reinterpret_cast<const uint8_t *>( &mSinAddr ) + 3 ) );
         std::ostringstream os;
         os << buf << " " << (int)mProtocol << " ";
-        for ( unsigned int i = 0 ; i < mBitmap.size() ; i++ )
-            if ( mBitmap[i] )
+        for ( unsigned int i = 0; i < mBitmap.size(); i++ )
+            if ( mBitmap[ i ] )
                 os << "1";
             else
                 os << "0";
@@ -842,13 +859,13 @@ namespace dns
         message.push_back( ( mSinAddr >> 24 ) & 0xff );
         message.push_back( mProtocol );
 
-        PacketData buf( 256*256/8 );
-        std::memset( &buf[0], 0, buf.size() );
+        PacketData buf( 256 * 256 / 8 );
+        std::memset( &buf[ 0 ], 0, buf.size() );
         unsigned int max_byte_index = 0;
-        for ( unsigned int i = 0 ; i < mBitmap.size() ; i++ ) {
-            unsigned int byte_index = mBitmap[i]/8;
-            unsigned int bit_index  = mBitmap[i]%8;
-            buf[byte_index] |= ( 1 << bit_index );
+        for ( unsigned int i = 0; i < mBitmap.size(); i++ ) {
+            unsigned int byte_index = mBitmap[ i ] / 8;
+            unsigned int bit_index  = mBitmap[ i ] % 8;
+            buf[ byte_index ] |= ( 1 << bit_index );
 
             max_byte_index = std::max( max_byte_index, byte_index );
         }
@@ -859,23 +876,25 @@ namespace dns
 
     std::string RecordWKS::getAddress() const
     {
-	return toString();
+        return toString();
     }
 
-    RDATAPtr RecordWKS::parse( const uint8_t *packet_begin, const uint8_t *packet_end,
-                               const uint8_t *rdata_begin,  const uint8_t *rdata_end )
+    RDATAPtr RecordWKS::parse( const uint8_t *packet_begin,
+                               const uint8_t *packet_end,
+                               const uint8_t *rdata_begin,
+                               const uint8_t *rdata_end )
     {
         if ( rdata_end - rdata_begin < 5 )
             throw FormatError( "too short size for WKS" );
         const uint8_t *pos = rdata_begin;
 
-        uint32_t addr  = get_bytes<uint32_t>( &pos );
-        uint8_t  proto = get_bytes<uint8_t>( &pos );
+        uint32_t          addr  = get_bytes<uint32_t>( &pos );
+        uint8_t           proto = get_bytes<uint8_t>( &pos );
         std::vector<Type> bitmap;
 
-        for ( unsigned int i = 0 ; pos < rdata_end ; i++, pos++ ) {
-            for ( int j = 0 ; j < 8 ; j++ )
-                if ( *pos & (1<<j) )
+        for ( unsigned int i = 0; pos < rdata_end; i++, pos++ ) {
+            for ( int j = 0; j < 8; j++ )
+                if ( *pos & ( 1 << j ) )
                     bitmap.push_back( 256 * i + j );
         }
         return RDATAPtr( new RecordWKS( addr, proto, bitmap ) );
@@ -910,15 +929,17 @@ namespace dns
         mDomainname.outputCanonicalWireFormat( message );
     }
 
-    RDATAPtr RecordNS::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordNS::parse( const uint8_t *packet_begin,
+                              const uint8_t *packet_end,
+                              const uint8_t *rdata_begin,
+                              const uint8_t *rdata_end )
     {
         Domainname name;
         Domainname::parsePacket( name, packet_begin, packet_end, rdata_begin );
         return RDATAPtr( new RecordNS( name ) );
     }
 
-    RecordMX::RecordMX( uint16_t priority, const Domainname &name )
-        : mPriority( priority ), mDomainname( name )
+    RecordMX::RecordMX( uint16_t priority, const Domainname &name ) : mPriority( priority ), mDomainname( name )
     {
     }
 
@@ -936,7 +957,7 @@ namespace dns
 
     uint32_t RecordMX::size( OffsetDB &offset_db, uint32_t begin ) const
     {
-        return sizeof(uint16_t) + offset_db.getOutputWireFormatSize( mDomainname, begin );
+        return sizeof( uint16_t ) + offset_db.getOutputWireFormatSize( mDomainname, begin );
     }
 
     void RecordMX::outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const
@@ -944,14 +965,17 @@ namespace dns
         message.pushUInt16HtoN( mPriority );
         offset_db.outputWireFormat( mDomainname, message );
     }
-    
+
     void RecordMX::outputCanonicalWireFormat( WireFormat &message ) const
     {
         message.pushUInt16HtoN( mPriority );
         mDomainname.outputCanonicalWireFormat( message );
     }
 
-    RDATAPtr RecordMX::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordMX::parse( const uint8_t *packet_begin,
+                              const uint8_t *packet_end,
+                              const uint8_t *rdata_begin,
+                              const uint8_t *rdata_end )
     {
         if ( rdata_end - rdata_begin < 3 )
             throw FormatError( "too few length for MX record," );
@@ -968,8 +992,7 @@ namespace dns
         mData.push_back( d );
     }
 
-    RecordTXT::RecordTXT( const std::vector<std::string> &d )
-	: mData( d )
+    RecordTXT::RecordTXT( const std::vector<std::string> &d ) : mData( d )
     {
     }
 
@@ -1014,11 +1037,14 @@ namespace dns
         return s;
     }
 
-    RDATAPtr RecordTXT::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordTXT::parse( const uint8_t *packet_begin,
+                               const uint8_t *packet_end,
+                               const uint8_t *rdata_begin,
+                               const uint8_t *rdata_end )
     {
         if ( rdata_end - rdata_begin < 1 )
             throw FormatError( "too few length for TXT record" );
-        const uint8_t *          pos = rdata_begin;
+        const uint8_t           *pos = rdata_begin;
         std::vector<std::string> txt_data;
 
         while ( pos < rdata_end ) {
@@ -1079,11 +1105,14 @@ namespace dns
         return s;
     }
 
-    RDATAPtr RecordSPF::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordSPF::parse( const uint8_t *packet_begin,
+                               const uint8_t *packet_end,
+                               const uint8_t *rdata_begin,
+                               const uint8_t *rdata_end )
     {
         if ( rdata_end - rdata_begin < 1 )
             throw FormatError( "too few length for SPF record" );
-        const uint8_t *          pos = rdata_begin;
+        const uint8_t           *pos = rdata_begin;
         std::vector<std::string> txt_data;
 
         while ( pos < rdata_end ) {
@@ -1126,7 +1155,10 @@ namespace dns
     }
 
 
-    RDATAPtr RecordCNAME::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordCNAME::parse( const uint8_t *packet_begin,
+                                 const uint8_t *packet_end,
+                                 const uint8_t *rdata_begin,
+                                 const uint8_t *rdata_end )
     {
         Domainname name;
         Domainname::parsePacket( name, packet_begin, packet_end, rdata_begin );
@@ -1148,9 +1180,9 @@ namespace dns
     {
         std::stringstream os;
         os << mOrder << " " << mPreference << " "
-           << "\"" << mFlags       << "\" "
-           << "\"" << mServices    << "\" "
-           << "\"" << mRegexp      << "\" "
+           << "\"" << mFlags << "\" "
+           << "\"" << mServices << "\" "
+           << "\"" << mRegexp << "\" "
            << "\"" << mReplacement << "\"";
         return os.str();
     }
@@ -1158,8 +1190,8 @@ namespace dns
     std::string RecordNAPTR::toString() const
     {
         std::stringstream os;
-        os << "order: " << mOrder << ", preference: " << mPreference << "flags: " << mFlags << ", services: " << mServices
-           << "regexp: " << mRegexp << ", replacement: " << mReplacement;
+        os << "order: " << mOrder << ", preference: " << mPreference << "flags: " << mFlags
+           << ", services: " << mServices << "regexp: " << mRegexp << ", replacement: " << mReplacement;
         return os.str();
     }
 
@@ -1181,11 +1213,13 @@ namespace dns
 
     uint32_t RecordNAPTR::size() const
     {
-        return sizeof( mOrder ) + sizeof( mPreference ) + 1 + mFlags.size() + 1 + mRegexp.size() +
-            mReplacement.size();
+        return sizeof( mOrder ) + sizeof( mPreference ) + 1 + mFlags.size() + 1 + mRegexp.size() + mReplacement.size();
     }
 
-    RDATAPtr RecordNAPTR::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordNAPTR::parse( const uint8_t *packet_begin,
+                                 const uint8_t *packet_end,
+                                 const uint8_t *rdata_begin,
+                                 const uint8_t *rdata_end )
     {
         if ( rdata_end - rdata_begin < 2 + 2 + 1 + 1 + 1 + 1 )
             throw FormatError( "too short for NAPTR RR" );
@@ -1201,12 +1235,10 @@ namespace dns
 
         Domainname in_replacement;
         Domainname::parsePacket( in_replacement, packet_begin, packet_end, pos );
-        return RDATAPtr(
-                        new RecordNAPTR( in_order, in_preference, in_flags, in_services, in_regexp, in_replacement ) );
+        return RDATAPtr( new RecordNAPTR( in_order, in_preference, in_flags, in_services, in_regexp, in_replacement ) );
     }
 
-    RecordDNAME::RecordDNAME( const Domainname &name )
-	: mDomainname( name )
+    RecordDNAME::RecordDNAME( const Domainname &name ) : mDomainname( name )
     {
     }
 
@@ -1222,7 +1254,7 @@ namespace dns
 
     uint32_t RecordDNAME::size( OffsetDB &offset_db, uint32_t begin ) const
     {
-        return offset_db.getOutputWireFormatSize( mDomainname, begin  );
+        return offset_db.getOutputWireFormatSize( mDomainname, begin );
     }
 
     void RecordDNAME::outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const
@@ -1236,7 +1268,10 @@ namespace dns
     }
 
 
-    RDATAPtr RecordDNAME::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordDNAME::parse( const uint8_t *packet_begin,
+                                 const uint8_t *packet_end,
+                                 const uint8_t *rdata_begin,
+                                 const uint8_t *rdata_end )
     {
         Domainname name;
         Domainname::parsePacket( name, packet_begin, packet_end, rdata_begin );
@@ -1262,8 +1297,8 @@ namespace dns
     std::string RecordSOA::toString() const
     {
         std::ostringstream soa_str;
-        soa_str << mMName.toString() << " " << mRName.toString() << " " << mSerial << " " << mRefresh << " " << mRetry << " "
-                << mExpire << " " << mMinimum;
+        soa_str << mMName.toString() << " " << mRName.toString() << " " << mSerial << " " << mRefresh << " " << mRetry
+                << " " << mExpire << " " << mMinimum;
         return soa_str.str();
     }
 
@@ -1271,17 +1306,16 @@ namespace dns
     {
         uint32_t size = 0;
         uint32_t pos  = begin;
-        
-        uint32_t mname_size= offset_db.getOutputWireFormatSize( mMName, pos );
-        pos  += mname_size;
+
+        uint32_t mname_size = offset_db.getOutputWireFormatSize( mMName, pos );
+        pos += mname_size;
         size += mname_size;
 
-        uint32_t rname_size= offset_db.getOutputWireFormatSize( mRName, pos );
-        pos  += rname_size;
+        uint32_t rname_size = offset_db.getOutputWireFormatSize( mRName, pos );
+        pos += rname_size;
         size += rname_size;
-        
-        size = ( sizeof( mSerial ) + sizeof( mRefresh ) +
-                 sizeof( mRetry ) + sizeof( mExpire ) + sizeof( mMinimum ) );
+
+        size = ( sizeof( mSerial ) + sizeof( mRefresh ) + sizeof( mRetry ) + sizeof( mExpire ) + sizeof( mMinimum ) );
         return size;
     }
 
@@ -1309,23 +1343,26 @@ namespace dns
 
     uint32_t RecordSOA::size() const
     {
-        return mMName.size() + mRName.size() + sizeof( mSerial ) + sizeof( mRefresh ) +
-            sizeof( mRetry ) + sizeof( mExpire ) + sizeof( mMinimum );
+        return mMName.size() + mRName.size() + sizeof( mSerial ) + sizeof( mRefresh ) + sizeof( mRetry ) +
+               sizeof( mExpire ) + sizeof( mMinimum );
     }
 
-    RDATAPtr RecordSOA::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordSOA::parse( const uint8_t *packet_begin,
+                               const uint8_t *packet_end,
+                               const uint8_t *rdata_begin,
+                               const uint8_t *rdata_end )
     {
         Domainname     mname_result, rname_result;
         const uint8_t *pos = rdata_begin;
         pos                = Domainname::parsePacket( mname_result, packet_begin, packet_end, pos );
         pos                = Domainname::parsePacket( rname_result, packet_begin, packet_end, pos );
-        if ( ( rdata_end - pos ) < ( sizeof(uint32_t) * 5 ) )
+        if ( ( rdata_end - pos ) < ( sizeof( uint32_t ) * 5 ) )
             throw FormatError( "too short RDATA size for SOA" );
-        uint32_t serial    = ntohl( get_bytes<uint32_t>( &pos ) );
-        uint32_t refresh   = ntohl( get_bytes<uint32_t>( &pos ) );
-        uint32_t retry     = ntohl( get_bytes<uint32_t>( &pos ) );
-        uint32_t expire    = ntohl( get_bytes<uint32_t>( &pos ) );
-        uint32_t minimum   = ntohl( get_bytes<uint32_t>( &pos ) );
+        uint32_t serial  = ntohl( get_bytes<uint32_t>( &pos ) );
+        uint32_t refresh = ntohl( get_bytes<uint32_t>( &pos ) );
+        uint32_t retry   = ntohl( get_bytes<uint32_t>( &pos ) );
+        uint32_t expire  = ntohl( get_bytes<uint32_t>( &pos ) );
+        uint32_t minimum = ntohl( get_bytes<uint32_t>( &pos ) );
 
         return RDATAPtr( new RecordSOA( mname_result, rname_result, serial, refresh, retry, expire, minimum ) );
     }
@@ -1371,10 +1408,13 @@ namespace dns
         return s;
     }
 
-    RDATAPtr RecordAPL::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordAPL::parse( const uint8_t *packet_begin,
+                               const uint8_t *packet_end,
+                               const uint8_t *rdata_begin,
+                               const uint8_t *rdata_end )
     {
         std::vector<APLEntry> entries;
-        const uint8_t *       pos = rdata_begin;
+        const uint8_t        *pos = rdata_begin;
 
         while ( pos < rdata_end ) {
             if ( rdata_end - pos < 4 )
@@ -1430,23 +1470,25 @@ namespace dns
         return 1 + 1 + mTag.size() + mValue.size();
     }
 
-    RDATAPtr RecordCAA::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordCAA::parse( const uint8_t *packet_begin,
+                               const uint8_t *packet_end,
+                               const uint8_t *rdata_begin,
+                               const uint8_t *rdata_end )
     {
         if ( rdata_end - rdata_begin <= 1 + 1 )
             throw FormatError( "too short for CAA RR" );
 
-        const uint8_t *pos = rdata_begin;
-        uint8_t flag     = get_bytes<uint8_t>( &pos );
-        uint8_t tag_size = get_bytes<uint8_t>( &pos );
+        const uint8_t *pos      = rdata_begin;
+        uint8_t        flag     = get_bytes<uint8_t>( &pos );
+        uint8_t        tag_size = get_bytes<uint8_t>( &pos );
 
         std::string tag, value;
-        tag.insert( tag.end(),
-                    reinterpret_cast<const uint8_t *>( pos ),
-                    reinterpret_cast<const uint8_t *>( pos ) + tag_size ); pos += tag_size;
+        tag.insert(
+            tag.end(), reinterpret_cast<const uint8_t *>( pos ), reinterpret_cast<const uint8_t *>( pos ) + tag_size );
+        pos += tag_size;
         if ( pos > rdata_end )
             throw FormatError( "invalid tag/value size for CAA" );
-        value.insert( value.end(),
-                      reinterpret_cast<const uint8_t *>( pos ), rdata_end );
+        value.insert( value.end(), reinterpret_cast<const uint8_t *>( pos ), rdata_end );
 
         return RDATAPtr( new RecordCAA( tag, value, flag ) );
     }
@@ -1465,16 +1507,14 @@ namespace dns
     std::string RecordSRV::toString() const
     {
         std::ostringstream os;
-        os << mPriority << " "
-	   << mWeight   << " "
-	   << mPort     << " "
-	   << mTarget.toString();
+        os << mPriority << " " << mWeight << " " << mPort << " " << mTarget.toString();
         return os.str();
     }
 
     uint32_t RecordSRV::size( OffsetDB &offset_db, uint32_t begin ) const
     {
-        return sizeof(mPriority) + sizeof(mWeight) + sizeof(mPort) + offset_db.getOutputWireFormatSize( mTarget, begin );
+        return sizeof( mPriority ) + sizeof( mWeight ) + sizeof( mPort ) +
+               offset_db.getOutputWireFormatSize( mTarget, begin );
     }
 
     void RecordSRV::outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const
@@ -1484,7 +1524,7 @@ namespace dns
         message.pushUInt16HtoN( mPort );
         offset_db.outputWireFormat( mTarget, message );
     }
-    
+
     void RecordSRV::outputCanonicalWireFormat( WireFormat &message ) const
     {
         message.pushUInt16HtoN( mPriority );
@@ -1493,7 +1533,10 @@ namespace dns
         mTarget.outputCanonicalWireFormat( message );
     }
 
-    RDATAPtr RecordSRV::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordSRV::parse( const uint8_t *packet_begin,
+                               const uint8_t *packet_end,
+                               const uint8_t *rdata_begin,
+                               const uint8_t *rdata_end )
     {
         const uint8_t *pos = rdata_begin;
 
@@ -1513,7 +1556,7 @@ namespace dns
         Domainname::parsePacket( name, packet_begin, packet_end, pos );
         return RDATAPtr( new RecordSRV( priority, weight, port, name ) );
     }
-    
+
     std::string RecordRRSIG::toZone() const
     {
         std::string signature_str;
@@ -1521,24 +1564,18 @@ namespace dns
 
         time_t expiration_time = mExpiration;
         time_t inception_time  = mInception;
-        tm expiration_tm, inception_tm;
+        tm     expiration_tm, inception_tm;
         gmtime_r( &expiration_time, &expiration_tm );
-        gmtime_r( &inception_time,  &inception_tm );
-        char expiration_str[256], inception_str[256];
+        gmtime_r( &inception_time, &inception_tm );
+        char expiration_str[ 256 ], inception_str[ 256 ];
 
-        strftime( expiration_str, sizeof(expiration_str), "%Y%m%d%H%M%S", &expiration_tm );
-        strftime( inception_str,  sizeof(inception_str),  "%Y%m%d%H%M%S", &inception_tm );
-        
+        strftime( expiration_str, sizeof( expiration_str ), "%Y%m%d%H%M%S", &expiration_tm );
+        strftime( inception_str, sizeof( inception_str ), "%Y%m%d%H%M%S", &inception_tm );
+
         std::ostringstream os;
-        os << typeCodeToString( mTypeCovered ) << " "
-           << (uint32_t)mAlgorithm             << " "
-           << (uint32_t)mLabelCount            << " "
-           << mOriginalTTL                     << " "
-           << expiration_str                   << " "
-           << inception_str                    << " "
-           << mKeyTag                          << " "
-           << mSigner.toString()               << " "
-           << signature_str;
+        os << typeCodeToString( mTypeCovered ) << " " << (uint32_t)mAlgorithm << " " << (uint32_t)mLabelCount << " "
+           << mOriginalTTL << " " << expiration_str << " " << inception_str << " " << mKeyTag << " "
+           << mSigner.toString() << " " << signature_str;
         return os.str();
     }
 
@@ -1549,14 +1586,14 @@ namespace dns
 
         std::ostringstream os;
         os << "Type Covered: " << typeCodeToString( mTypeCovered ) << ", "
-           << "Algorithm: "    << (uint32_t)mAlgorithm             << ", "
-           << "Label Count: "  << (uint32_t)mLabelCount            << ", "
-           << "Original TTL: " << mOriginalTTL                     << ", "
-           << "Expiration: "   << mExpiration                       << ", "
-           << "Inception: "    << mInception                        << ", "
-           << "Key Tag: "      << mKeyTag                          << ", "
-           << "signer: "       << mSigner                           << ", "
-           << "Signature: "    << signature_str;
+           << "Algorithm: " << (uint32_t)mAlgorithm << ", "
+           << "Label Count: " << (uint32_t)mLabelCount << ", "
+           << "Original TTL: " << mOriginalTTL << ", "
+           << "Expiration: " << mExpiration << ", "
+           << "Inception: " << mInception << ", "
+           << "Key Tag: " << mKeyTag << ", "
+           << "signer: " << mSigner << ", "
+           << "Signature: " << signature_str;
         return os.str();
     }
 
@@ -1584,10 +1621,7 @@ namespace dns
         encodeToBase64( mPublicKey, public_key_str );
 
         std::ostringstream os;
-        os << ( mFlag == KSK ? "257" : "256" ) << " "
-           << 3                               << " "
-           << (unsigned int)mAlgorithm         << " "
-           << public_key_str;
+        os << ( mFlag == KSK ? "257" : "256" ) << " " << 3 << " " << (unsigned int)mAlgorithm << " " << public_key_str;
         return os.str();
     }
 
@@ -1598,9 +1632,9 @@ namespace dns
         encodeToBase64( mPublicKey, public_key_str );
 
         std::ostringstream os;
-        os << "KSK/ZSK: "    << ( mFlag == KSK ? "KSK" : "ZSK" ) << ", "
-           << "Protocal: "   << 3                               << ", "
-           << "Algorithm: "  << (unsigned int)mAlgorithm         << ", "
+        os << "KSK/ZSK: " << ( mFlag == KSK ? "KSK" : "ZSK" ) << ", "
+           << "Protocal: " << 3 << ", "
+           << "Algorithm: " << (unsigned int)mAlgorithm << ", "
            << "Public Key: " << public_key_str;
         return os.str();
     }
@@ -1618,13 +1652,16 @@ namespace dns
         message.pushBuffer( mPublicKey );
     }
 
-    RDATAPtr RecordDNSKEY::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordDNSKEY::parse( const uint8_t *packet_begin,
+                                  const uint8_t *packet_end,
+                                  const uint8_t *rdata_begin,
+                                  const uint8_t *rdata_end )
     {
         const uint8_t *pos = rdata_begin;
         uint16_t       f   = ntohs( get_bytes<uint16_t>( &pos ) );
-        get_bytes<uint8_t>( &pos );             // skip unsed protocol field
-        uint8_t      algo  = get_bytes<uint8_t>( &pos );
-        PacketData   key;
+        get_bytes<uint8_t>( &pos ); // skip unsed protocol field
+        uint8_t    algo = get_bytes<uint8_t>( &pos );
+        PacketData key;
         key.insert( key.end(), pos, rdata_end );
 
         return RDATAPtr( new RecordDNSKEY( f, algo, key ) );
@@ -1636,10 +1673,7 @@ namespace dns
         encodeToHex( mDigest, digest_str );
 
         std::ostringstream os;
-        os << mKeyTag                   << " "
-           << (unsigned int)mAlgorithm  << " "
-           << (unsigned int)mDigestType << " "
-           << digest_str;
+        os << mKeyTag << " " << (unsigned int)mAlgorithm << " " << (unsigned int)mDigestType << " " << digest_str;
         return os.str();
     }
 
@@ -1649,10 +1683,10 @@ namespace dns
         encodeToHex( mDigest, digest_str );
 
         std::ostringstream os;
-        os << "keytag: "      << mKeyTag                   << ", "
-           << "algorithm: "   << (unsigned int)mAlgorithm  << ", "
+        os << "keytag: " << mKeyTag << ", "
+           << "algorithm: " << (unsigned int)mAlgorithm << ", "
            << "digest type: " << (unsigned int)mDigestType << ", "
-           << "digest: "      << digest_str;
+           << "digest: " << digest_str;
         return os.str();
     }
 
@@ -1672,7 +1706,10 @@ namespace dns
         message.pushBuffer( mDigest );
     }
 
-    RDATAPtr RecordDS::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordDS::parse( const uint8_t *packet_begin,
+                              const uint8_t *packet_end,
+                              const uint8_t *rdata_begin,
+                              const uint8_t *rdata_end )
     {
         if ( ( rdata_end - rdata_begin ) < ( 2 + 1 + 1 ) )
             throw FormatError( "too short RDATA for DS" );
@@ -1691,16 +1728,16 @@ namespace dns
 
     void NSECBitmapField::Window::add( Type t )
     {
-	mTypes.push_back( t );
+        mTypes.push_back( t );
     }
 
     uint8_t NSECBitmapField::Window::getWindowSize() const
     {
-	uint8_t max_bytes = 0;
-	for ( Type t : mTypes ) {
-	    max_bytes = std::max<uint8_t>( max_bytes, typeToBitmapIndex( t ) / 8 + 1 );
-	}
-	return max_bytes;
+        uint8_t max_bytes = 0;
+        for ( Type t : mTypes ) {
+            max_bytes = std::max<uint8_t>( max_bytes, typeToBitmapIndex( t ) / 8 + 1 );
+        }
+        return max_bytes;
     }
 
     uint32_t NSECBitmapField::Window::size() const
@@ -1711,80 +1748,82 @@ namespace dns
     void NSECBitmapField::Window::outputWireFormat( WireFormat &message ) const
     {
         uint8_t window_size = getWindowSize();
-	message.pushUInt8( mIndex );
-	message.pushUInt8( window_size );
+        message.pushUInt8( mIndex );
+        message.pushUInt8( window_size );
 
-	PacketData bitmaps;
-	bitmaps.resize( window_size );
-	for ( uint8_t &v : bitmaps )
-	    v = 0;
-	for ( Type t : mTypes ) {
-	    uint8_t index = 7 - ( typeToBitmapIndex( t ) % 8 );
-	    uint8_t flag  = 1 << index;
+        PacketData bitmaps;
+        bitmaps.resize( window_size );
+        for ( uint8_t &v : bitmaps )
+            v = 0;
+        for ( Type t : mTypes ) {
+            uint8_t index = 7 - ( typeToBitmapIndex( t ) % 8 );
+            uint8_t flag  = 1 << index;
             bitmaps.at( typeToBitmapIndex( t ) / 8 ) |= flag;
-	}
-	message.pushBuffer( bitmaps );
+        }
+        message.pushBuffer( bitmaps );
     }
 
     std::string NSECBitmapField::Window::toString() const
     {
-	std::ostringstream os;
-	for ( Type t : mTypes ) {
-	    os << typeCodeToString( t ) << ",";
-	}
+        std::ostringstream os;
+        for ( Type t : mTypes ) {
+            os << typeCodeToString( t ) << ",";
+        }
 
-	std::string result( os.str() );
-        if ( ! result.empty() )
+        std::string result( os.str() );
+        if ( !result.empty() )
             result.pop_back();
         return result;
     }
 
     uint8_t NSECBitmapField::Window::typeToBitmapIndex( Type t )
     {
-	return (0xff & t);
+        return ( 0xff & t );
     }
 
-    const uint8_t *NSECBitmapField::Window::parse( NSECBitmapField::Window &ref_win, const uint8_t *packet_begin, const uint8_t *begin, const uint8_t *end )
+    const uint8_t *NSECBitmapField::Window::parse( NSECBitmapField::Window &ref_win,
+                                                   const uint8_t           *packet_begin,
+                                                   const uint8_t           *begin,
+                                                   const uint8_t           *end )
     {
-	uint8_t window_index = *begin++;
-	uint8_t window_size  = *begin++;
-	if ( begin + window_size >= end )
-	    throw std::runtime_error( "Bad NSEC bitmap size" );
+        uint8_t window_index = *begin++;
+        uint8_t window_size  = *begin++;
+        if ( begin + window_size >= end )
+            throw std::runtime_error( "Bad NSEC bitmap size" );
 
-	ref_win.setIndex( window_index );
-	for ( uint8_t bitmap_index = 0 ; bitmap_index / 8 < window_size ; bitmap_index++ ) {
-	    uint8_t flag = 1 << ( ( bitmap_index - 1 ) % 8 );
-	    if( *( begin + ( bitmap_index / 8 ) ) & flag ) {
-		Type t = 0x0100 * window_index + bitmap_index;
-		ref_win.add( t );
-	    }
-	}
+        ref_win.setIndex( window_index );
+        for ( uint8_t bitmap_index = 0; bitmap_index / 8 < window_size; bitmap_index++ ) {
+            uint8_t flag = 1 << ( ( bitmap_index - 1 ) % 8 );
+            if ( *( begin + ( bitmap_index / 8 ) ) & flag ) {
+                Type t = 0x0100 * window_index + bitmap_index;
+                ref_win.add( t );
+            }
+        }
         return begin + window_size;
     }
 
     void NSECBitmapField::add( Type t )
     {
-	uint8_t window_index = typeToWindowIndex( t );
-	auto window = mWindows.find( window_index );
-	if ( window == mWindows.end() ) {
-	    mWindows.insert( std::make_pair( window_index, Window( window_index ) ) );
-	}
-	window = mWindows.find( window_index );
-	window->second.add( t );
+        uint8_t window_index = typeToWindowIndex( t );
+        auto    window       = mWindows.find( window_index );
+        if ( window == mWindows.end() ) {
+            mWindows.insert( std::make_pair( window_index, Window( window_index ) ) );
+        }
+        window = mWindows.find( window_index );
+        window->second.add( t );
     }
 
     void NSECBitmapField::addWindow( const NSECBitmapField::Window &win )
     {
-	uint8_t window_index = win.getIndex();
-	auto window = mWindows.find( window_index );
-	if ( window == mWindows.end() ) {
-	    mWindows.insert( std::make_pair( window_index, win ) );
-	}
-	else {
-	    std::ostringstream os;
-	    os << "Bad NSEC record( mutiple window index \"" << (int)window_index << "\" is found.";
-	    throw std::runtime_error( os.str() );
-	}
+        uint8_t window_index = win.getIndex();
+        auto    window       = mWindows.find( window_index );
+        if ( window == mWindows.end() ) {
+            mWindows.insert( std::make_pair( window_index, win ) );
+        } else {
+            std::ostringstream os;
+            os << "Bad NSEC record( mutiple window index \"" << (int)window_index << "\" is found.";
+            throw std::runtime_error( os.str() );
+        }
     }
 
     std::vector<Type> NSECBitmapField::getTypes() const
@@ -1798,62 +1837,65 @@ namespace dns
 
     std::string NSECBitmapField::toString() const
     {
-	std::ostringstream os;
-	for ( auto win : mWindows )
-	    os << win.second.toString() << " ";
-	std::string result( os.str() );
-        if ( ! result.empty() )
+        std::ostringstream os;
+        for ( auto win : mWindows )
+            os << win.second.toString() << " ";
+        std::string result( os.str() );
+        if ( !result.empty() )
             result.pop_back();
-	return result;
+        return result;
     }
 
     uint32_t NSECBitmapField::size() const
     {
-	uint32_t s = 0;
-	for ( auto win : mWindows ) {
-	    s += win.second.size();
+        uint32_t s = 0;
+        for ( auto win : mWindows ) {
+            s += win.second.size();
         }
-	return s;
+        return s;
     }
 
     void NSECBitmapField::outputWireFormat( WireFormat &message ) const
     {
-	for ( auto win : mWindows )
-	    win.second.outputWireFormat( message );
+        for ( auto win : mWindows )
+            win.second.outputWireFormat( message );
     }
 
     uint8_t NSECBitmapField::typeToWindowIndex( Type t )
     {
-	return (0xff00 & t) >> 8;
+        return ( 0xff00 & t ) >> 8;
     }
 
-    const uint8_t *NSECBitmapField::parse( NSECBitmapField &ref_bitmaps, const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *bitmap_begin, const uint8_t *bitmap_end )
+    const uint8_t *NSECBitmapField::parse( NSECBitmapField &ref_bitmaps,
+                                           const uint8_t   *packet_begin,
+                                           const uint8_t   *packet_end,
+                                           const uint8_t   *bitmap_begin,
+                                           const uint8_t   *bitmap_end )
     {
         const uint8_t *pos = bitmap_begin;
-	while ( pos < bitmap_end ) {
-	    NSECBitmapField::Window win;
-	    pos = NSECBitmapField::Window::parse( win, packet_begin, pos, bitmap_end );
-	    ref_bitmaps.addWindow( win );
-	}
-	return pos;
+        while ( pos < bitmap_end ) {
+            NSECBitmapField::Window win;
+            pos = NSECBitmapField::Window::parse( win, packet_begin, pos, bitmap_end );
+            ref_bitmaps.addWindow( win );
+        }
+        return pos;
     }
 
-    RecordNSEC::RecordNSEC( const Domainname &next, const std::vector<Type> &types )
-	: mNextDomainname( next )
+    RecordNSEC::RecordNSEC( const Domainname &next, const std::vector<Type> &types ) : mNextDomainname( next )
     {
         for ( auto t : types ) {
             mBitmaps.add( t );
-        } 
+        }
     }
 
     std::string RecordNSEC::toZone() const
     {
-	return toString();
+        return toString();
     }
 
     std::string RecordNSEC::toString() const
     {
-	return mNextDomainname.toString() + " " + mBitmaps.toString();
+        return mNextDomainname.toString() + " " + mBitmaps.toString();
     }
 
     void RecordNSEC::outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const
@@ -1863,36 +1905,35 @@ namespace dns
 
     void RecordNSEC::outputCanonicalWireFormat( WireFormat &message ) const
     {
-	mNextDomainname.outputCanonicalWireFormat( message );
-	mBitmaps.outputWireFormat( message );
+        mNextDomainname.outputCanonicalWireFormat( message );
+        mBitmaps.outputWireFormat( message );
     }
 
     uint32_t RecordNSEC::size() const
     {
-	return mNextDomainname.size() + mBitmaps.size();
+        return mNextDomainname.size() + mBitmaps.size();
     }
 
-    RDATAPtr RecordNSEC::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordNSEC::parse( const uint8_t *packet_begin,
+                                const uint8_t *packet_end,
+                                const uint8_t *rdata_begin,
+                                const uint8_t *rdata_end )
     {
-	Domainname next;
-	const uint8_t *pos = Domainname::parsePacket( next, packet_begin, packet_end, rdata_begin );
-	NSECBitmapField bitmaps;
-	NSECBitmapField::parse( bitmaps, packet_begin, packet_end, pos, rdata_end );
-	return RDATAPtr( new RecordNSEC( next, bitmaps ) );
+        Domainname      next;
+        const uint8_t  *pos = Domainname::parsePacket( next, packet_begin, packet_end, rdata_begin );
+        NSECBitmapField bitmaps;
+        NSECBitmapField::parse( bitmaps, packet_begin, packet_end, pos, rdata_end );
+        return RDATAPtr( new RecordNSEC( next, bitmaps ) );
     }
 
 
-    RecordNSEC3::RecordNSEC3( HashAlgorithm           algo,
-			      uint8_t                 flag,
-			      uint16_t                iteration,
-			      const PacketData        &salt,
-			      const PacketData        &next_hash,
-			      const std::vector<Type> &types )
-	: mHashAlgorithm( algo ),
-	  mFlag( flag ),
-	  mIteration( iteration ),
-	  mSalt( salt ),
-	  mNextHash( next_hash )
+    RecordNSEC3::RecordNSEC3( HashAlgorithm            algo,
+                              uint8_t                  flag,
+                              uint16_t                 iteration,
+                              const PacketData        &salt,
+                              const PacketData        &next_hash,
+                              const std::vector<Type> &types )
+        : mHashAlgorithm( algo ), mFlag( flag ), mIteration( iteration ), mSalt( salt ), mNextHash( next_hash )
     {
         for ( auto t : types ) {
             mBitmaps.add( t );
@@ -1901,31 +1942,27 @@ namespace dns
 
     std::string RecordNSEC3::toZone() const
     {
-	return toString();
+        return toString();
     }
 
     std::string RecordNSEC3::toString() const
     {
-	std::string salt_string;
+        std::string salt_string;
         if ( mSalt.size() == 0 )
             salt_string == "";
         else
             encodeToHex( mSalt, salt_string );
-	
-	std::string hash_string;
+
+        std::string hash_string;
         if ( mNextHash.size() == 0 )
             hash_string == "";
         else
             encodeToBase32Hex( mNextHash, hash_string );
 
-	std::stringstream os;
-	os << (uint32_t)mHashAlgorithm << " "
-	   << (uint32_t)mFlag          << " "
-	   << (uint32_t)mIteration     << " "
-	   << salt_string              << " "
-	   << hash_string              << " "
-	   << mBitmaps.toString();
-	return os.str();
+        std::stringstream os;
+        os << (uint32_t)mHashAlgorithm << " " << (uint32_t)mFlag << " " << (uint32_t)mIteration << " " << salt_string
+           << " " << hash_string << " " << mBitmaps.toString();
+        return os.str();
     }
 
     void RecordNSEC3::outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const
@@ -1935,88 +1972,82 @@ namespace dns
 
     void RecordNSEC3::outputCanonicalWireFormat( WireFormat &message ) const
     {
-	message.pushUInt8( mHashAlgorithm );
-	message.pushUInt8( mFlag );
-	message.pushUInt16HtoN( mIteration );
-	message.pushUInt8( mSalt.size() );
-	message.pushBuffer( mSalt );
-	message.pushUInt8( mNextHash.size() );
-	message.pushBuffer( mNextHash );
-	mBitmaps.outputWireFormat( message );
+        message.pushUInt8( mHashAlgorithm );
+        message.pushUInt8( mFlag );
+        message.pushUInt16HtoN( mIteration );
+        message.pushUInt8( mSalt.size() );
+        message.pushBuffer( mSalt );
+        message.pushUInt8( mNextHash.size() );
+        message.pushBuffer( mNextHash );
+        mBitmaps.outputWireFormat( message );
     }
 
     uint32_t RecordNSEC3::size() const
     {
-	return
-	    + 1                 // Hash Algorithm
-	    + 1                 // Flags
-	    + 2                 // Iteration
-	    + 1                 // Salt size
-	    + mSalt.size()      // Salt
-	    + 1                 // Next Hash size
-	    + mNextHash.size()  // Hash
-	    + mBitmaps.size();  // Bitmaps
+        return +1                 // Hash Algorithm
+               + 1                // Flags
+               + 2                // Iteration
+               + 1                // Salt size
+               + mSalt.size()     // Salt
+               + 1                // Next Hash size
+               + mNextHash.size() // Hash
+               + mBitmaps.size(); // Bitmaps
     }
 
-    RDATAPtr RecordNSEC3::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordNSEC3::parse( const uint8_t *packet_begin,
+                                 const uint8_t *packet_end,
+                                 const uint8_t *rdata_begin,
+                                 const uint8_t *rdata_end )
     {
-	//                           alg flag itr ssize salt hsize hash bitmaps   
-	if ( rdata_end - rdata_begin < 1 + 1  + 2  + 1   + 1   + 1   + 1 + 3 ) {
-	    throw FormatError( "too few size for NSEC3" );
-	}
+        //                           alg flag itr ssize salt hsize hash bitmaps
+        if ( rdata_end - rdata_begin < 1 + 1 + 2 + 1 + 1 + 1 + 1 + 3 ) {
+            throw FormatError( "too few size for NSEC3" );
+        }
 
-        const uint8_t *pos = rdata_begin;
-	uint8_t  algo      = get_bytes<uint8_t>( &pos );
-	uint8_t  flag      = get_bytes<uint8_t>( &pos );
-        uint16_t iteration = ntohs( get_bytes<uint16_t>( &pos ) );
+        const uint8_t *pos       = rdata_begin;
+        uint8_t        algo      = get_bytes<uint8_t>( &pos );
+        uint8_t        flag      = get_bytes<uint8_t>( &pos );
+        uint16_t       iteration = ntohs( get_bytes<uint16_t>( &pos ) );
 
         uint8_t salt_size = get_bytes<uint8_t>( &pos );
-	if ( rdata_end - pos < salt_size + 1 + 1 + 3 ) {
-	    throw FormatError( "too few size for salt,hash,bitmaps of NSEC3" );
-	}
-	PacketData salt;
-	salt.insert( salt.end(), pos, pos + salt_size );
-	pos += salt_size;
+        if ( rdata_end - pos < salt_size + 1 + 1 + 3 ) {
+            throw FormatError( "too few size for salt,hash,bitmaps of NSEC3" );
+        }
+        PacketData salt;
+        salt.insert( salt.end(), pos, pos + salt_size );
+        pos += salt_size;
 
         uint8_t next_hash_size = get_bytes<uint8_t>( &pos );
-	if ( rdata_end - pos < next_hash_size + 3 ) {
-	    throw FormatError( "too few size for hash,bitmaps of NSEC3" );
-	}
-	PacketData next_hash;
-	next_hash.insert( next_hash.end(), pos, pos + next_hash_size );
-	pos += next_hash_size;
+        if ( rdata_end - pos < next_hash_size + 3 ) {
+            throw FormatError( "too few size for hash,bitmaps of NSEC3" );
+        }
+        PacketData next_hash;
+        next_hash.insert( next_hash.end(), pos, pos + next_hash_size );
+        pos += next_hash_size;
 
-	NSECBitmapField bitmaps;
-	NSECBitmapField::parse( bitmaps, packet_begin, packet_end, pos, rdata_end );
-	return RDATAPtr( new RecordNSEC3( algo, flag, iteration, salt, next_hash, bitmaps ) );
+        NSECBitmapField bitmaps;
+        NSECBitmapField::parse( bitmaps, packet_begin, packet_end, pos, rdata_end );
+        return RDATAPtr( new RecordNSEC3( algo, flag, iteration, salt, next_hash, bitmaps ) );
     }
 
-    RecordNSEC3PARAM::RecordNSEC3PARAM( HashAlgorithm     algo,
-                                        uint8_t           flag,
-                                        uint16_t          iteration,
-                                        const PacketData &salt )
-        : mHashAlgorithm( algo ),
-          mFlag( flag ),
-          mIteration( iteration ),
-          mSalt( salt )
-    {}
+    RecordNSEC3PARAM::RecordNSEC3PARAM( HashAlgorithm algo, uint8_t flag, uint16_t iteration, const PacketData &salt )
+        : mHashAlgorithm( algo ), mFlag( flag ), mIteration( iteration ), mSalt( salt )
+    {
+    }
 
     std::string RecordNSEC3PARAM::toZone() const
     {
-	return toString();
+        return toString();
     }
 
     std::string RecordNSEC3PARAM::toString() const
     {
-	std::string salt_string;
-	encodeToHex( mSalt, salt_string );
-	
-	std::stringstream os;
-	os << (uint32_t)mHashAlgorithm << " "
-	   << (uint32_t)mFlag          << " "
-	   << (uint32_t)mIteration     << " "
-	   << salt_string;
-	return os.str();
+        std::string salt_string;
+        encodeToHex( mSalt, salt_string );
+
+        std::stringstream os;
+        os << (uint32_t)mHashAlgorithm << " " << (uint32_t)mFlag << " " << (uint32_t)mIteration << " " << salt_string;
+        return os.str();
     }
 
     void RecordNSEC3PARAM::outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const
@@ -2026,60 +2057,59 @@ namespace dns
 
     void RecordNSEC3PARAM::outputCanonicalWireFormat( WireFormat &message ) const
     {
-	message.pushUInt8( mHashAlgorithm );
-	message.pushUInt8( mFlag );
-	message.pushUInt16HtoN( mIteration );
-	message.pushUInt8( mSalt.size() );
-	message.pushBuffer( mSalt );
+        message.pushUInt8( mHashAlgorithm );
+        message.pushUInt8( mFlag );
+        message.pushUInt16HtoN( mIteration );
+        message.pushUInt8( mSalt.size() );
+        message.pushBuffer( mSalt );
     }
 
     uint32_t RecordNSEC3PARAM::size() const
     {
-	return
-	    + 1                 // Hash Algorithm
-	    + 1                 // Flags
-	    + 2                 // Iteration
-	    + 1                 // Salt size
-	    + mSalt.size();     // Salt
+        return +1              // Hash Algorithm
+               + 1             // Flags
+               + 2             // Iteration
+               + 1             // Salt size
+               + mSalt.size(); // Salt
     }
 
-    RDATAPtr RecordNSEC3PARAM::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordNSEC3PARAM::parse( const uint8_t *packet_begin,
+                                      const uint8_t *packet_end,
+                                      const uint8_t *rdata_begin,
+                                      const uint8_t *rdata_end )
     {
-	//                alg flag itr ssize salt
-	if ( rdata_end - rdata_begin < 1 + 1  + 2  + 1   + 1 ) {
-	    throw FormatError( "too few size for NSEC3PARAM" );
-	}
-        const uint8_t *pos = rdata_begin;
-	uint8_t  algo      = get_bytes<uint8_t>( &pos );
-	uint8_t  flag      = get_bytes<uint8_t>( &pos );
-        uint16_t iteration = ntohs( get_bytes<uint16_t>( &pos ) );
+        //                alg flag itr ssize salt
+        if ( rdata_end - rdata_begin < 1 + 1 + 2 + 1 + 1 ) {
+            throw FormatError( "too few size for NSEC3PARAM" );
+        }
+        const uint8_t *pos       = rdata_begin;
+        uint8_t        algo      = get_bytes<uint8_t>( &pos );
+        uint8_t        flag      = get_bytes<uint8_t>( &pos );
+        uint16_t       iteration = ntohs( get_bytes<uint16_t>( &pos ) );
 
         uint8_t salt_size = get_bytes<uint8_t>( &pos );
-	if ( rdata_end - pos < salt_size ) {
-	    throw FormatError( "too few size for salt" );
-	}
-	PacketData salt;
-	salt.insert( salt.end(), pos, pos + salt_size );
-	pos += salt_size;
-	return RDATAPtr( new RecordNSEC3PARAM( algo, flag, iteration, salt ) );
+        if ( rdata_end - pos < salt_size ) {
+            throw FormatError( "too few size for salt" );
+        }
+        PacketData salt;
+        salt.insert( salt.end(), pos, pos + salt_size );
+        pos += salt_size;
+        return RDATAPtr( new RecordNSEC3PARAM( algo, flag, iteration, salt ) );
     }
 
 
     std::string RecordTLSA::toZone() const
     {
-	return toString();
+        return toString();
     }
 
     std::string RecordTLSA::toString() const
     {
-	std::string data;
-	encodeToHex( mData, data );
-	
-	std::stringstream os;
-	os << (uint32_t)mUsage        << " "
-	   << (uint32_t)mSelector     << " "
-	   << (uint32_t)mMatchingType << " "
-           << data;
+        std::string data;
+        encodeToHex( mData, data );
+
+        std::stringstream os;
+        os << (uint32_t)mUsage << " " << (uint32_t)mSelector << " " << (uint32_t)mMatchingType << " " << data;
 
         return os.str();
     }
@@ -2091,34 +2121,36 @@ namespace dns
 
     void RecordTLSA::outputCanonicalWireFormat( WireFormat &message ) const
     {
-	message.pushUInt8( mUsage );
-	message.pushUInt8( mSelector );
-	message.pushUInt8( mMatchingType );
-	message.pushBuffer( mData );
+        message.pushUInt8( mUsage );
+        message.pushUInt8( mSelector );
+        message.pushUInt8( mMatchingType );
+        message.pushBuffer( mData );
     }
 
     uint32_t RecordTLSA::size() const
     {
-	return
-	    + 1                 // Usage
-	    + 1                 // Selector
-	    + 1                 // MatchingType
-	    + mData.size();     // Certificate Association Data
+        return +1              // Usage
+               + 1             // Selector
+               + 1             // MatchingType
+               + mData.size(); // Certificate Association Data
     }
 
-    RDATAPtr RecordTLSA::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordTLSA::parse( const uint8_t *packet_begin,
+                                const uint8_t *packet_end,
+                                const uint8_t *rdata_begin,
+                                const uint8_t *rdata_end )
     {
-	if ( rdata_end - rdata_begin < 1 + 1 + 1 + 1 ) {
-	    throw FormatError( "too few size for TLSA" );
-	}
-        const uint8_t *pos = rdata_begin;
-	uint8_t usage         = get_bytes<uint8_t>( &pos );
-	uint8_t selector      = get_bytes<uint8_t>( &pos );
-        uint8_t matching_type = get_bytes<uint8_t>( &pos );
+        if ( rdata_end - rdata_begin < 1 + 1 + 1 + 1 ) {
+            throw FormatError( "too few size for TLSA" );
+        }
+        const uint8_t *pos           = rdata_begin;
+        uint8_t        usage         = get_bytes<uint8_t>( &pos );
+        uint8_t        selector      = get_bytes<uint8_t>( &pos );
+        uint8_t        matching_type = get_bytes<uint8_t>( &pos );
 
-	PacketData data;
-	data.insert( data.end(), pos, packet_end );
-	return RDATAPtr( new RecordTLSA( usage, selector, matching_type, data ) );
+        PacketData data;
+        data.insert( data.end(), pos, packet_end );
+        return RDATAPtr( new RecordTLSA( usage, selector, matching_type, data ) );
     }
 
     std::string RecordOptionsData::toString() const
@@ -2136,8 +2168,8 @@ namespace dns
     {
         uint32_t rr_size = 0;
         for ( auto option : mOptions ) {
-            rr_size += 2; // Option-Code
-            rr_size += 2; // Option-Data Length 
+            rr_size += 2;              // Option-Code
+            rr_size += 2;              // Option-Data Length
             rr_size += option->size(); // OPtion-Data
         }
         return rr_size;
@@ -2155,9 +2187,12 @@ namespace dns
         }
     }
 
-    RDATAPtr RecordOptionsData::parse( const uint8_t *packet_begin, const uint8_t *packet_end, const uint8_t *rdata_begin, const uint8_t *rdata_end )
+    RDATAPtr RecordOptionsData::parse( const uint8_t *packet_begin,
+                                       const uint8_t *packet_end,
+                                       const uint8_t *rdata_begin,
+                                       const uint8_t *rdata_end )
     {
-	BOOST_LOG_TRIVIAL(trace) << "dns.opt.parse: parse options data";
+        BOOST_LOG_TRIVIAL( trace ) << "dns.opt.parse: parse options data";
 
         const uint8_t *pos = rdata_begin;
 
@@ -2175,38 +2210,39 @@ namespace dns
                 continue;
             if ( pos + option_size > rdata_end ) {
                 std::ostringstream os;
-                os << "option data size is missmatch: option_size: " << option_size << "; remain size " << rdata_end - pos;
+                os << "option data size is missmatch: option_size: " << option_size << "; remain size "
+                   << rdata_end - pos;
                 throw FormatError( os.str() );
             }
 
             switch ( option_code ) {
             case OPT_NSID:
-		BOOST_LOG_TRIVIAL(trace) << "dns.option.parse: parse NSID";
+                BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: parse NSID";
                 options.push_back( NSIDOption::parse( pos, pos + option_size ) );
                 break;
             case OPT_COOKIE:
-		BOOST_LOG_TRIVIAL(trace) << "dns.option.parse: parse COOKIE";
+                BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: parse COOKIE";
                 options.push_back( CookieOption::parse( pos, pos + option_size ) );
                 break;
             case OPT_CLIENT_SUBNET:
-		BOOST_LOG_TRIVIAL(trace) << "dns.option.parse: parse ClientSubnet";
+                BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: parse ClientSubnet";
                 options.push_back( ClientSubnetOption::parse( pos, pos + option_size ) );
                 break;
             case OPT_TCP_KEEPALIVE:
-		BOOST_LOG_TRIVIAL(trace) << "dns.option.parse: parse TCPKEEPALIVE";
+                BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: parse TCPKEEPALIVE";
                 options.push_back( TCPKeepaliveOption::parse( pos, pos + option_size ) );
                 break;
             case OPT_KEY_TAG:
-		BOOST_LOG_TRIVIAL(trace) << "dns.option.parse: parse KEYTAG";
+                BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: parse KEYTAG";
                 options.push_back( KeyTagOption::parse( pos, pos + option_size ) );
             default:
-		BOOST_LOG_TRIVIAL(trace) << "dns.option.parse: unknown option " << option_code;
+                BOOST_LOG_TRIVIAL( trace ) << "dns.option.parse: unknown option " << option_code;
                 break;
             }
             pos += option_size;
         }
 
-	BOOST_LOG_TRIVIAL(trace) << "dns.opiont.parsed: parse options data";
+        BOOST_LOG_TRIVIAL( trace ) << "dns.opiont.parsed: parse options data";
         return RDATAPtr( new RecordOptionsData( options ) );
     }
 
@@ -2229,7 +2265,7 @@ namespace dns
         opt.mPayloadSize = record.mClass;
         opt.mRCode       = record.mTTL >> 24;
         opt.mVersion     = 0xff & ( record.mTTL >> 16 );
-        opt.mDOBit       = ( ( 1 << 7 ) & ( record.mTTL >> 8 ) ) ? true : false; 
+        opt.mDOBit       = ( ( 1 << 7 ) & ( record.mTTL >> 8 ) ) ? true : false;
         opt.mOptions     = record.mRData;
 
         return opt;
@@ -2293,11 +2329,10 @@ namespace dns
 
     uint16_t ClientSubnetOption::size() const
     {
-        return
-            2 +       // FAMILY
-            1 +       // SOURCE PREFIX-LENGTH
-            1 +       // SCOPE PREFIX-LENGTH
-            getAddressSize( mSourcePrefix );  // ADDRESS
+        return 2 +                              // FAMILY
+               1 +                              // SOURCE PREFIX-LENGTH
+               1 +                              // SCOPE PREFIX-LENGTH
+               getAddressSize( mSourcePrefix ); // ADDRESS
     }
 
     std::string ClientSubnetOption::toString() const
@@ -2373,14 +2408,13 @@ namespace dns
 
     uint16_t CookieOption::size() const
     {
-        return
-            mClientCookie.size() + // CLIENT COOKIE LENGTH
-            mServerCookie.size();  // SERVER COOKIE LENGTH
+        return mClientCookie.size() + // CLIENT COOKIE LENGTH
+               mServerCookie.size();  // SERVER COOKIE LENGTH
     }
 
     std::string CookieOption::toString() const
     {
-        std::string client, server;
+        std::string        client, server;
         std::ostringstream os;
         encodeToHex( mClientCookie, client );
         encodeToHex( mServerCookie, server );
@@ -2393,13 +2427,13 @@ namespace dns
     {
         unsigned int size = end - begin;
         if ( size < 8 ) {
-            return OptPseudoRROptPtr( new CookieOption( PacketData(), PacketData() ) );        
+            return OptPseudoRROptPtr( new CookieOption( PacketData(), PacketData() ) );
         }
 
         PacketData client( begin, begin + 8 );
         PacketData server( begin + 8, end );
 
-        return OptPseudoRROptPtr( new CookieOption( client, server ) );        
+        return OptPseudoRROptPtr( new CookieOption( client, server ) );
     }
 
     void TCPKeepaliveOption::outputWireFormat( WireFormat &message ) const
@@ -2428,12 +2462,12 @@ namespace dns
         unsigned int size = end - begin;
         if ( size != 2 ) {
             std::ostringstream os;
-            os << "DNS TCPKeepalive length " << size << " must be 2."; 
-	    throw FormatError( os.str() );
+            os << "DNS TCPKeepalive length " << size << " must be 2.";
+            throw FormatError( os.str() );
         }
 
         uint16_t timeout = ntohs( get_bytes<uint16_t>( &pos ) );
-        return OptPseudoRROptPtr( new TCPKeepaliveOption( timeout ) );        
+        return OptPseudoRROptPtr( new TCPKeepaliveOption( timeout ) );
     }
 
     std::string KeyTagOption::toString() const
@@ -2446,7 +2480,7 @@ namespace dns
 
     uint16_t KeyTagOption::size() const
     {
-        return mTags.size() * 2;     // Tags Size(2byte) * Tag Count
+        return mTags.size() * 2; // Tags Size(2byte) * Tag Count
     }
 
     void KeyTagOption::outputWireFormat( WireFormat &message ) const
@@ -2459,16 +2493,16 @@ namespace dns
 
     OptPseudoRROptPtr KeyTagOption::parse( const uint8_t *begin, const uint8_t *end )
     {
-        const uint8_t *pos = begin;
-        uint16_t size = end - begin;
+        const uint8_t *pos  = begin;
+        uint16_t       size = end - begin;
         if ( size % 2 != 0 )
             throw FormatError( "bad option length for Key Tag Option" );
-        uint16_t tag_count = size / 2;
+        uint16_t              tag_count = size / 2;
         std::vector<uint16_t> tags;
-	tags.reserve( tag_count );
-        for ( uint16_t i = 0 ; i < tag_count ; i++ )
+        tags.reserve( tag_count );
+        for ( uint16_t i = 0; i < tag_count; i++ )
             tags.push_back( ntohs( get_bytes<uint16_t>( &pos ) ) );
-            
+
         return OptPseudoRROptPtr( new KeyTagOption( tags ) );
     }
 
@@ -2493,20 +2527,20 @@ namespace dns
 
     OptPseudoRROptPtr ExtendedErrorOption::parse( const uint8_t *begin, const uint8_t *end )
     {
-        const uint8_t *pos = begin;
-        uint16_t size = end - begin;
+        const uint8_t *pos  = begin;
+        uint16_t       size = end - begin;
         if ( size < 2 )
             throw FormatError( "bad option length for ExtendErrorOption" );
-        uint16_t code;
+        uint16_t    code;
         std::string text;
 
         code = ntohs( get_bytes<uint16_t>( &pos ) );
         size -= 2;
 
-        for ( uint16_t i = 0 ; i < size ; i++ ) {
+        for ( uint16_t i = 0; i < size; i++ ) {
             text.push_back( get_bytes<uint8_t>( &pos ) );
         }
-            
+
         return OptPseudoRROptPtr( new ExtendedErrorOption( code, text ) );
     }
 
@@ -2524,14 +2558,14 @@ namespace dns
     uint32_t RecordTKEY::size() const
     {
         return mAlgorithm.size() + //
-            4 +                // inception
-            4 +                // expiration
-            2 +                // mode
-            2 +                // error
-            2 +                // key size
-            mKey.size() +       // key
-            2 +                // other data size
-            mOtherData.size();
+               4 +                 // inception
+               4 +                 // expiration
+               2 +                 // mode
+               2 +                 // error
+               2 +                 // key size
+               mKey.size() +       // key
+               2 +                 // other data size
+               mOtherData.size();
     }
 
     void RecordTKEY::outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const
@@ -2555,14 +2589,14 @@ namespace dns
     uint32_t RecordTSIGData::size() const
     {
         return mAlgorithm.size() + // ALGORITHM
-            6 +                // signed time
-            2 +                // FUDGE
-            2 +                // MAC SIZE
-            mMAC.size() +       // MAC
-            2 +                // ORIGINAL ID
-            2 +                // ERROR
-            2 +                // OTHER LENGTH
-            mOther.size();      // OTHER
+               6 +                 // signed time
+               2 +                 // FUDGE
+               2 +                 // MAC SIZE
+               mMAC.size() +       // MAC
+               2 +                 // ORIGINAL ID
+               2 +                 // ERROR
+               2 +                 // OTHER LENGTH
+               mOther.size();      // OTHER
     }
 
     void RecordTSIGData::outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const
@@ -2589,25 +2623,19 @@ namespace dns
     std::string RecordTSIGData::toZone() const
     {
         std::string mac_str, other_str;
-        encodeToBase64( mMAC,   mac_str );
+        encodeToBase64( mMAC, mac_str );
         encodeToBase64( mOther, other_str );
 
         time_t signed_time_t = mSignedTime;
-        tm signed_time_tm;
+        tm     signed_time_tm;
         gmtime_r( &signed_time_t, &signed_time_tm );
-        char signed_time_str[256];
+        char signed_time_str[ 256 ];
 
-        strftime( signed_time_str, sizeof(signed_time_str), "%Y%m%d%H%M%S", &signed_time_tm );
+        strftime( signed_time_str, sizeof( signed_time_str ), "%Y%m%d%H%M%S", &signed_time_tm );
 
         std::ostringstream os;
-        os << mKeyName.toString()   << " "
-           << mAlgorithm.toString() << " "
-           << signed_time_str       << " "
-           << mFudge                << " "
-           << mac_str               << " "
-           << mOriginalID           << " "
-           << mError                << " "
-           << other_str;
+        os << mKeyName.toString() << " " << mAlgorithm.toString() << " " << signed_time_str << " " << mFudge << " "
+           << mac_str << " " << mOriginalID << " " << mError << " " << other_str;
 
         return os.str();
     }
@@ -2615,19 +2643,21 @@ namespace dns
     std::string RecordTSIGData::toString() const
     {
         std::ostringstream os;
-        os << "key name: "    << mKeyName                << ", "
-           << "algorigthm: "  << mAlgorithm              << ", "
-           << "signed time: " << mSignedTime             << ", "
-           << "fudge: "       << mFudge                  << ", "
-           << "MAC: "         << printPacketData( mMAC ) << ", "
-           << "Original ID: " << mOriginalID             << ", "
-           << "Error: "       << mError;
+        os << "key name: " << mKeyName << ", "
+           << "algorigthm: " << mAlgorithm << ", "
+           << "signed time: " << mSignedTime << ", "
+           << "fudge: " << mFudge << ", "
+           << "MAC: " << printPacketData( mMAC ) << ", "
+           << "Original ID: " << mOriginalID << ", "
+           << "Error: " << mError;
 
         return os.str();
     }
 
-    RDATAPtr RecordTSIGData::parse( const uint8_t *packet_begin, const uint8_t *packet_end,
-                                    const uint8_t *rdata_begin, const uint8_t *rdata_end,
+    RDATAPtr RecordTSIGData::parse( const uint8_t    *packet_begin,
+                                    const uint8_t    *packet_end,
+                                    const uint8_t    *rdata_begin,
+                                    const uint8_t    *rdata_end,
                                     const Domainname &key_name )
     {
         const uint8_t *pos = rdata_begin;
@@ -2670,14 +2700,8 @@ namespace dns
         other.insert( other.end(), pos, pos + other_length );
         pos += other_length;
 
-        return RDATAPtr( new RecordTSIGData( key_name,
-                                             algorithm,
-                                             signed_time,
-                                             fudge,
-                                             mac,
-                                             original_id,
-                                             error,
-                                             other ) );
+        return RDATAPtr(
+            new RecordTSIGData( key_name, algorithm, signed_time, fudge, mac, original_id, error, other ) );
     }
 
     struct TSIGHash {
@@ -2689,8 +2713,8 @@ namespace dns
         uint16_t   other_length;
         PacketData other;
 
-	void outputWireFormat( WireFormat &message ) const;
-        uint32_t   size() const;
+        void     outputWireFormat( WireFormat &message ) const;
+        uint32_t size() const;
     };
 
     uint32_t TSIGHash::size() const
@@ -2701,20 +2725,20 @@ namespace dns
 
     void TSIGHash::outputWireFormat( WireFormat &message ) const
     {
-	name.outputCanonicalWireFormat( message );
-	algorithm.outputCanonicalWireFormat( message );
+        name.outputCanonicalWireFormat( message );
+        algorithm.outputCanonicalWireFormat( message );
 
         uint32_t time_high = signed_time >> 16;
         uint32_t time_low  = ( ( 0xffff & signed_time ) << 16 ) + fudge;
 
-	message.pushUInt16HtoN( CLASS_ANY );
-	message.pushUInt32HtoN( 0 );
-	algorithm.outputCanonicalWireFormat( message );
-	message.pushUInt32HtoN( time_high );
-	message.pushUInt32HtoN( time_low );
-	message.pushUInt16HtoN( error );
-	message.pushUInt16HtoN( other_length );
-	message.pushBuffer( other );
+        message.pushUInt16HtoN( CLASS_ANY );
+        message.pushUInt32HtoN( 0 );
+        algorithm.outputCanonicalWireFormat( message );
+        message.pushUInt32HtoN( time_high );
+        message.pushUInt32HtoN( time_low );
+        message.pushUInt16HtoN( error );
+        message.pushUInt16HtoN( other_length );
+        message.pushBuffer( other );
     }
 
 
@@ -2723,26 +2747,26 @@ namespace dns
         PacketData   mac( EVP_MAX_MD_SIZE );
         unsigned int mac_size = EVP_MAX_MD_SIZE;
 
-	WireFormat hash_target;
-	hash_target.pushBuffer( query_mac );
+        WireFormat hash_target;
+        hash_target.pushBuffer( query_mac );
         PacketData hash_data = query_mac;
 
         PacketData         presigned_message = message;
         PacketHeaderField *h                 = reinterpret_cast<PacketHeaderField *>( &presigned_message[ 0 ] );
         h->id                                = htons( tsig_info.mOriginalID );
-	hash_target.pushBuffer( presigned_message );
+        hash_target.pushBuffer( presigned_message );
 
         TSIGHash tsig_hash;
-        tsig_hash.name            = tsig_info.mName;
-        tsig_hash.algorithm       = tsig_info.mAlgorithm;
-        tsig_hash.signed_time     = tsig_info.mSignedTime;
-        tsig_hash.fudge           = tsig_info.mFudge;
-        tsig_hash.error           = tsig_info.mError;
-        tsig_hash.other_length    = tsig_info.mOther.size();
-        tsig_hash.other           = tsig_info.mOther;
-	tsig_hash.outputWireFormat( hash_target );
+        tsig_hash.name         = tsig_info.mName;
+        tsig_hash.algorithm    = tsig_info.mAlgorithm;
+        tsig_hash.signed_time  = tsig_info.mSignedTime;
+        tsig_hash.fudge        = tsig_info.mFudge;
+        tsig_hash.error        = tsig_info.mError;
+        tsig_hash.other_length = tsig_info.mOther.size();
+        tsig_hash.other        = tsig_info.mOther;
+        tsig_hash.outputWireFormat( hash_target );
 
-	PacketData ht = hash_target.get();
+        PacketData ht = hash_target.get();
         HMAC( EVP_get_digestbyname( "md5" ),
               &tsig_info.mKey[ 0 ],
               tsig_info.mKey.size(),
@@ -2756,7 +2780,10 @@ namespace dns
         return mac;
     }
 
-    void addTSIGResourceRecord( const TSIGInfo &tsig_info, WireFormat &message, const PacketData &query_mac, OffsetDB &offset_db )
+    void addTSIGResourceRecord( const TSIGInfo   &tsig_info,
+                                WireFormat       &message,
+                                const PacketData &query_mac,
+                                OffsetDB         &offset_db )
     {
         PacketData mac = getTSIGMAC( tsig_info, message.get(), query_mac );
 
@@ -2766,13 +2793,13 @@ namespace dns
         entry.mClass      = CLASS_ANY;
         entry.mTTL        = 0;
         entry.mRData      = RDATAPtr( new RecordTSIGData( tsig_info.mName,
-                                                          tsig_info.mAlgorithm,
-                                                          tsig_info.mSignedTime,
-                                                          tsig_info.mFudge,
-                                                          mac,
-                                                          tsig_info.mOriginalID,
-                                                          tsig_info.mError,
-                                                          tsig_info.mOther ) );
+                                                     tsig_info.mAlgorithm,
+                                                     tsig_info.mSignedTime,
+                                                     tsig_info.mFudge,
+                                                     mac,
+                                                     tsig_info.mOriginalID,
+                                                     tsig_info.mError,
+                                                     tsig_info.mOther ) );
 
         PacketData         packet  = message.get();
         PacketHeaderField *header  = reinterpret_cast<PacketHeaderField *>( &packet[ 0 ] );
@@ -2780,12 +2807,13 @@ namespace dns
         adcount++;
         header->additional_infomation_count = htons( adcount );
 
-	message.clear();
-	message.pushBuffer( packet );
+        message.clear();
+        message.pushBuffer( packet );
         generateResourceRecord( entry, message, offset_db, false );
     }
 
-    bool verifyTSIGResourceRecord( const TSIGInfo &tsig_info, const MessageInfo &packet_info, const WireFormat &message )
+    bool
+    verifyTSIGResourceRecord( const TSIGInfo &tsig_info, const MessageInfo &packet_info, const WireFormat &message )
     {
         PacketData hash_data = message.get();
 
@@ -2802,24 +2830,24 @@ namespace dns
 
         // skip question section
         for ( auto q : packet_info.mQuestionSection )
-            pos = parseQuestion( &hash_data[ 0 ], &hash_data[0] + hash_data.size(), pos ).second;
+            pos = parseQuestion( &hash_data[ 0 ], &hash_data[ 0 ] + hash_data.size(), pos ).second;
 
         // skip answer section
         for ( auto r : packet_info.mAnswerSection )
-            pos = parseResourceRecord( &hash_data[ 0 ], &hash_data[0] + hash_data.size(), pos ).second;
+            pos = parseResourceRecord( &hash_data[ 0 ], &hash_data[ 0 ] + hash_data.size(), pos ).second;
 
         // skip authority section
         for ( auto r : packet_info.mAuthoritySection )
-            pos = parseResourceRecord( &hash_data[ 0 ], &hash_data[0] + hash_data.size(), pos ).second;
+            pos = parseResourceRecord( &hash_data[ 0 ], &hash_data[ 0 ] + hash_data.size(), pos ).second;
         // SKIP NON TSIG RECORD IN ADDITIONAL SECTION
         bool is_found_tsig = false;
         for ( auto r : packet_info.mAdditionalSection ) {
-            ResourceRecordPair parsed_rr_pair = parseResourceRecord( &hash_data[ 0 ], &hash_data[0] + hash_data.size(), pos );
+            ResourceRecordPair parsed_rr_pair =
+                parseResourceRecord( &hash_data[ 0 ], &hash_data[ 0 ] + hash_data.size(), pos );
             if ( parsed_rr_pair.first.mType == TYPE_TSIG ) {
                 is_found_tsig = true;
                 break;
-            }
-            else {
+            } else {
                 pos = parsed_rr_pair.second;
             }
         }
@@ -2833,4 +2861,4 @@ namespace dns
         PacketData mac = getTSIGMAC( tsig_info, hash_data, PacketData() );
         return mac == tsig_info.mMAC;
     }
-}
+} // namespace dns
