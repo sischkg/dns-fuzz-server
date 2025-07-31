@@ -1,0 +1,7 @@
+---
+- domain: fuzz.kinokodon.jp
+  type: ksk
+  algorithm: RSASHA1
+  not_before: 1708013580
+  not_after: 1708877580
+  key_file: /home/toshi/git/dns-fuzz-server/data/keys/fuzz.kinokodon.jp.ksk.0.key

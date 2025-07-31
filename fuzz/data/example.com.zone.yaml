@@ -1,0 +1,45 @@
+- owner: example.com
+  type: SOA
+  ttl: 3600
+  record:
+  - mname: ns01.example.com
+    rname: hostmaster.example.com
+    serial: 2017050101
+    refresh: 3600
+    retry: 1800
+    expire: 8640000
+    minimum: 3600
+- owner: example.com
+  ttl: 86400
+  type: NS
+  record:
+  - nameserver: ns01.example.com
+  - nameserver: ns02.example.com
+- owner: example.com
+  ttl: 86400
+  type: MX
+  record:
+  - priority: 10
+    mailserver: mail.example.com
+- owner: ns01.example.com
+  ttl: 86400
+  type: A
+  record:
+  - address: 192.168.0.11
+- owner: ns02.example.com
+  ttl: 86400
+  type: A
+  record:
+  - address: 192.168.0.12
+- owner: www.example.com
+  ttl: 3600
+  type: A
+  record:
+  - address: 192.168.0.101
+  - address: 192.168.0.102
+- owner: mail.example.com
+  ttl: 3600
+  type: A
+  record:
+  - address: 192.168.0.111
+

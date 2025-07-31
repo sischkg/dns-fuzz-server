@@ -1,0 +1,12 @@
+local.					      60 IN SOA		ns01.local. hostmaster.local. 20170531 3600 1800 8640000 3600
+local.					      3600 IN NS	ns01.local.
+local.					      3600 IN MX	10 mail.local.
+_http._tcp.local.			      60 IN SRV	10 1 80 www.local.
+_http._tcp.local.			      60 IN SRV	10 1 80 ns01.local.
+_https._tcp.local.			      60 IN SRV	10 1 443 www.local.
+_https._tcp.local.			      60 IN SRV	10 1 443 ns01.local.
+_ldap._tcp.local.			      60 IN SRV	10 1 389 www.local.
+_ldap._tcp.local.			      60 IN SRV	10 1 389 ns01.local.
+mail.local.				      3600 IN A		192.168.0.102
+ns01.local.				      30 IN A		192.168.0.11
+www.local.				      3600 IN A		192.168.0.102

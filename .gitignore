@@ -4,6 +4,7 @@
 .\#*
 *.a
 *.orig
+dns-fuzz-server.code-workspace
 Testing
 local.build.sh
 bin/
@@ -20,3 +21,7 @@ data/*.signed
 data/*.key
 data/*.yaml
 data/keys
+server/keys
+server/*.yaml
+*/storage/timers/*.mdb
+

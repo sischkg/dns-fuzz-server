@@ -1,0 +1,7 @@
+---
+- domain: example.com
+  type: zsk
+  algorithm: RSASHA1
+  not_before: 1524554952
+  not_after: 1525418952
+  key_file: data/keys/example.com.zsk.0.key

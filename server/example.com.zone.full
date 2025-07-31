@@ -1,0 +1,9 @@
+example.com.				      20 IN SOA	ns01.example.co. hostmaster.example.com. 20170531 3600 1800 8640000 3600
+example.com.				      20 IN NS	ns01.example.com.
+example.com.				      20 IN NS	ns02.example.com.
+example.com.				      3 IN MX	10 mail.example.com.
+mail.example.com.			      3 IN A		192.168.0.111
+ns01.example.com.			      3 IN A	192.168.128.101
+ns02.example.com.			      3 IN A	192.168.128.99
+www.example.com.			      2 IN A		192.168.0.101
+www.example.com.			      2 IN A		192.168.0.102

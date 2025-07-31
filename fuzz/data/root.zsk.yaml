@@ -1,0 +1,7 @@
+---
+- domain: .
+  type: zsk
+  algorithm: RSASHA1
+  not_before: 1681463511
+  not_after: 1682327511
+  key_file: /home/toshi/git/vagrant-dns/data/dnssec/keys/root.zsk.0.key

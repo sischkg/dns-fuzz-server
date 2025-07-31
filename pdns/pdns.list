@@ -1,0 +1,2 @@
+deb [signed-by=/etc/apt/keyrings/rec-52-pub.asc] http://repo.powerdns.com/ubuntu noble-rec-52 main
+

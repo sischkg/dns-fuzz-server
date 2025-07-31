@@ -1,0 +1,7 @@
+---
+- domain: ecdsa.siskrn.co
+  type: zsk
+  algorithm: ECDSAP256SHA256
+  not_before: 1511609859
+  not_after: 1552473859
+  key_file: ./data/ecdsa.siskrn.co.zsk.0.key

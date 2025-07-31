@@ -1,0 +1,16 @@
+$TTL 20
+
+.  	IN SOA	ns01. hostmaster.ns01.  (
+					20170531	; serial
+					3600	; refresh
+					1800	; retry
+					8640000	; expire
+					3600 )	; minimum
+	IN NS	ns01.
+
+ns01.	IN A	192.168.128.11
+
+
+com.	IN NS	ns01.com.
+ns01.com.	IN A	192.168.128.12
+

@@ -1,0 +1,7 @@
+fuzz.kinokodon.jp.			      30 IN SOA		ns01.fuzz.kinokodon.jp. hostmaster.fuzz.kinokodon.jp. 20170531 3600 1800 8640000 10
+fuzz.kinokodon.jp.			      3 IN NS	ns01.fuzz.kinokodon.jp.
+fuzz.kinokodon.jp.			      1 IN MX	10 mail.fuzz.kinokodon.jp.
+mail.fuzz.kinokodon.jp.			      1 IN A		192.168.0.111
+ns01.fuzz.kinokodon.jp.			      30 IN A	172.16.253.40
+www.fuzz.kinokodon.jp.			      2 IN A		192.168.0.101
+www.fuzz.kinokodon.jp.			      2 IN A		192.168.0.102

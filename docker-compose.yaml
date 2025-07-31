@@ -1,0 +1,91 @@
+services:
+  root:
+    image: cznic/knot:latest
+    volumes:
+      - ./root/etc/knot:/etc/knot
+      - ./root/storage:/storage
+      - ./root/var/run:/var/run
+    networks:
+      inet:
+        ipv4_address: 192.168.128.11
+    command: ["knotd", "-c", "/etc/knot/knotd.conf"]
+  auth:
+    image: cznic/knot:latest
+    volumes:
+      - ./auth/etc/knot:/etc/knot
+      - ./auth/storage:/storage
+      - ./auth/var/run:/var/run
+    networks:
+      inet:
+        ipv4_address: 192.168.128.12
+    command: ["knotd", "-c", "/etc/knot/knotd.conf"]
+  fuzz-server:
+    build: ./
+    restart: always
+    volumes:
+      - ./server:/usr/local/etc/data
+    networks:
+      inet:
+        ipv4_address: 192.168.128.101
+    command: [ "/usr/local/bin/fuzz_server", "--file", "/usr/local/etc/data/example.com.zone.full", "--zone", "example.com", "--ksk", "/usr/local/etc/data/example.com.ksk.yaml", "--zsk", "/usr/local/etc/data/example.com.zsk.yaml"]
+
+  fuzz-client-bind9:
+    build:  ./
+    networks:
+      inet:
+        ipv4_address: 192.168.128.102
+    command: [ "/usr/local/bin/fuzz_client", "-s", "192.168.128.201", "-b", "example.com", "-i", "100", "-r", "1" ]
+
+  fuzz-client-unbound:
+    build:  ./
+    networks:
+      inet:
+        ipv4_address: 192.168.128.103
+    command: [ "/usr/local/bin/fuzz_client", "-s", "192.168.128.202", "-b", "example.com", "-i", "100", "-r", "1" ]
+
+  fuzz-client-pdns:
+    build:  ./
+    networks:
+      inet:
+        ipv4_address: 192.168.128.104
+    command: [ "/usr/local/bin/fuzz_client", "-s", "192.168.128.203", "-b", "example.com", "-i", "100", "-r", "1" ]
+
+  bind9:
+    build: ./bind9
+    volumes:
+      - ./bind9/etc/bind/:/etc/bind/
+      - ./bind9/var/cache/bind/:/var/lib/bind/
+      - ./bind9/var/lib/bind/:/var/lib/bind/
+      - ./bind9/var/log/:/var/log/
+    networks:
+      inet:
+        ipv4_address: 192.168.128.201
+
+  unbound:
+    build: ./unbound
+    volumes:
+      - ./unbound/etc/unbound:/etc/unbound
+    networks:
+      inet:
+        ipv4_address: 192.168.128.202
+  pdns:
+    build: ./pdns
+    volumes:
+      - ./pdns/etc/powerdns/:/etc/powerdns/
+    networks:
+      inet:
+        ipv4_address: 192.168.128.203
+
+  client:
+    image: cznic/knot:latest
+    networks:
+      inet:
+        ipv4_address: 192.168.128.100
+
+networks:
+  inet:
+    ipam:
+      config:
+        - subnet: 192.168.128.0/24
+          gateway: 192.168.128.254
+
