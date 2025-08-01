@@ -868,13 +868,13 @@ namespace dns
     std::shared_ptr<OptPseudoRROption> ErrorReportingGenerator::generate( const MessageInfo &hint )
     {
         Domainname agent_domain = getDomainname( hint );
-        std::shared_ptr<OptPseudoRROption>( new ErrorReportingOption( agent_domain ) );
+        return std::shared_ptr<OptPseudoRROption>( new ErrorReportingOption( agent_domain ) );
     }
 
     std::shared_ptr<OptPseudoRROption> ErrorReportingGenerator::generate()
     {
         Domainname agent_domain = generateDomainname();
-        std::shared_ptr<OptPseudoRROption>( new ErrorReportingOption( agent_domain ) );
+        return std::shared_ptr<OptPseudoRROption>( new ErrorReportingOption( agent_domain ) );
     }
 
     /**********************************************************
