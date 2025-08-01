@@ -52,11 +52,12 @@ RUN mkdir -p \
   chown unbound:unbound /var/run/unbound
 COPY --from=builder /usr/local/sbin/unbound         /usr/local/sbin/unbound
 COPY --from=builder /usr/local/sbin/unbound-control /usr/local/sbin/unbound-control
-COPY ./etc/unbound/unbound.conf /etc/unbound/unbound.conf
-COPY ./etc/unbound/unbound_control.pem /etc/unbound/unbound_control.pem
-COPY ./etc/unbound/unbound_control.key /etc/unbound/unbound_control.key
-COPY ./etc/unbound/unbound_server.pem  /etc/unbound/unbound_server.pem
-COPY ./etc/unbound/unbound_server.key  /etc/unbound/unbound_server.key
+#COPY ./etc/unbound/unbound.conf /etc/unbound/unbound.conf
+#COPY ./etc/unbound/root.hint    /etc/unbound/root.hint
+#COPY ./etc/unbound/unbound_control.pem /etc/unbound/unbound_control.pem
+#COPY ./etc/unbound/unbound_control.key /etc/unbound/unbound_control.key
+#COPY ./etc/unbound/unbound_server.pem  /etc/unbound/unbound_server.pem
+#COPY ./etc/unbound/unbound_server.key  /etc/unbound/unbound_server.key
 
 ENTRYPOINT ["/usr/local/sbin/unbound", "-d", "-c", "/etc/unbound/unbound.conf"]
 
