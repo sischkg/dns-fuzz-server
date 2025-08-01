@@ -30,6 +30,7 @@ services:
     command: [ "/usr/local/bin/fuzz_server", "--file", "/usr/local/etc/data/example.com.zone.full", "--zone", "example.com", "--ksk", "/usr/local/etc/data/example.com.ksk.yaml", "--zsk", "/usr/local/etc/data/example.com.zsk.yaml"]
 
   fuzz-client-bind9:
+    restart: always
     build:  ./
     networks:
       inet:
@@ -37,6 +38,7 @@ services:
     command: [ "/usr/local/bin/fuzz_client", "-s", "192.168.128.201", "-b", "example.com", "-i", "100", "-r", "1" ]
 
   fuzz-client-unbound:
+    restart: always
     build:  ./
     networks:
       inet:
@@ -44,6 +46,7 @@ services:
     command: [ "/usr/local/bin/fuzz_client", "-s", "192.168.128.202", "-b", "example.com", "-i", "100", "-r", "1" ]
 
   fuzz-client-pdns:
+    restart: always
     build:  ./
     networks:
       inet:
