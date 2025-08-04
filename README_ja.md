@@ -9,25 +9,17 @@ dns-fuzz-serverはDNS権威サーバとして振る舞い、フルリゾルバ�
 
 ## Quick Start
 
-Centos 7.4をインストールします。
+Ubuntu 24.04 LTSをインストールします。
 
 コンパイルに必要なソフトウェアをインストールします。
 
-```
-# yum install epel-release
-# yum install gcc-c++ boost-devel gtest-devel wget perl yaml-cpp-devel bind-utils bind
 
-# wget https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.sh
-# sh cmake-3.10.0-Linux-x86_64.sh --skip-license --prefix=/usr/local
-
-# wget https://www.openssl.org/source/openssl-1.1.0g.tar.gz
-# tar xzf openssl-1.1.0g.tar.gz
-# cd openssl-1.1.0g
-# ./config
-# make
-# make install
-# echo /usr/local/lib64 > /etc/ld.so.conf.d/local.conf
-# ldconfig
+```shell-session
+$ sudo apt install make cmake g++ libyaml-cpp-dev libboost-all-dev bind9-utils git
+$ git clone git@github.com:sischkg/dns-fuzz-server.git
+$ cd dns-fuzz-server
+$ cmake
+$ make
 ```
 
 dns-fuzz-serverをコンパイルします。
