@@ -27,7 +27,7 @@ services:
     networks:
       inet:
         ipv4_address: 192.168.128.101
-    command: [ "/usr/local/bin/fuzz_server", "--file", "/usr/local/etc/data/example.com.zone.full", "--zone", "example.com", "--ksk", "/usr/local/etc/data/example.com.ksk.yaml", "--zsk", "/usr/local/etc/data/example.com.zsk.yaml"]
+    command: [ "/usr/local/bin/fuzz_server", "--file", "/usr/local/etc/data/example.com.zone.full", "--zone", "example.com", "--ksk", "/usr/local/etc/data/example.com.ksk.yaml", "--zsk", "/usr/local/etc/data/example.com.zsk.yaml", "--nsec3", "1"]
 
   fuzz-client-bind9:
     restart: always
@@ -78,6 +78,14 @@ services:
     networks:
       inet:
         ipv4_address: 192.168.128.203
+
+  fuzz-client-knot:
+    restart: always
+    build:  ./
+    networks:
+      inet:
+        ipv4_address: 192.168.128.211
+    command: [ "/usr/local/bin/fuzz_client", "-s", "192.168.128.12", "-b", "example.com", "-i", "100", "-r", "1" ]
 
   client:
     image: cznic/knot:latest
