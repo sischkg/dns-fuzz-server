@@ -19,6 +19,21 @@ services:
       inet:
         ipv4_address: 192.168.128.12
     command: ["knotd", "-c", "/etc/knot/knotd.conf"]
+  auth2:
+    build: ./auth2
+    volumes:
+      - ./auth2/etc/nsd:/etc/nsd
+    networks:
+      inet:
+        ipv4_address: 192.168.128.13
+  auth3:
+    build: ./auth2
+    volumes:
+      - ./auth3/etc/nsd:/etc/nsd
+    networks:
+      inet:
+        ipv4_address: 192.168.128.14
+
   fuzz-server:
     build: ./
     restart: always
@@ -53,6 +68,20 @@ services:
         ipv4_address: 192.168.128.104
     command: [ "/usr/local/bin/fuzz_client", "-s", "192.168.128.203", "-b", "example.com", "-i", "100", "-r", "1" ]
 
+  fuzz-client-nsd:
+    restart: always
+    build:  ./
+    networks:
+      inet:
+        ipv4_address: 192.168.128.106
+    command: [ "/usr/local/bin/fuzz_client", "-s", "192.168.128.14", "-b", "example.jp", "-i", "100", "-r", "1" ]
+
+  fuzz-client:
+    build:  ./
+    networks:
+      inet:
+        ipv4_address: 192.168.128.110
+
   bind9:
     build: ./bind9
     volumes:
@@ -78,14 +107,6 @@ services:
     networks:
       inet:
         ipv4_address: 192.168.128.203
-
-  fuzz-client-knot:
-    restart: always
-    build:  ./
-    networks:
-      inet:
-        ipv4_address: 192.168.128.211
-    command: [ "/usr/local/bin/fuzz_client", "-s", "192.168.128.12", "-b", "example.com", "-i", "100", "-r", "1" ]
 
   client:
     image: cznic/knot:latest

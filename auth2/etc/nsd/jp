@@ -1,0 +1,15 @@
+$TTL 20
+
+@  	IN SOA	ns01.jp. hostmaster.ns01.jp.  (
+					20170531	; serial
+					3600	; refresh
+					1800	; retry
+					8640000	; expire
+					3600 )	; minimum
+	IN NS	ns01
+
+ns01	IN A	192.168.128.13
+
+example IN NS	ns01.example
+ns01.example	IN A 192.168.128.14
+
