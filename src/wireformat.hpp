@@ -63,28 +63,28 @@ public:
 
     void pushUInt16( uint16_t v )
     {
-        push_back( ( uint8_t )( 0xff & ( v >> 0 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 8 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 0 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 8 ) ) );
     }
 
     void pushUInt32( uint32_t v )
     {
-        push_back( ( uint8_t )( 0xff & ( v >> 0 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 8 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 16 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 24 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 0 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 8 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 16 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 24 ) ) );
     }
 
     void pushUInt64( uint64_t v )
     {
-        push_back( ( uint8_t )( 0xff & ( v >> 0 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 8 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 16 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 24 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 32 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 40 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 48 ) ) );
-        push_back( ( uint8_t )( 0xff & ( v >> 56 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 0 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 8 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 16 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 24 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 32 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 40 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 48 ) ) );
+        push_back( (uint8_t)( 0xff & ( v >> 56 ) ) );
     }
 
     void pushUInt16HtoN( uint16_t v )
@@ -142,7 +142,7 @@ public:
     }
 
     bool operator<( const WireFormat &rhs ) const;
-    
+
     template <class UnaryFunction>
     void foreach ( UnaryFunction func ) const
     {
@@ -152,16 +152,16 @@ public:
     }
 
     template <class BinaryFunction>
-    void foreachBuffers ( BinaryFunction func ) const
+    void foreachBuffers( BinaryFunction func ) const
     {
-	int last_buffer_index = mBuffers.size() - 1;
-	for ( int i = 0 ; i < last_buffer_index ; i++ ) {
-	    func( mBuffers[i], mBuffers[i] + mBufferSize );
-	}
-	func( mBuffers[last_buffer_index], mBuffers[last_buffer_index] + mEnd % mBufferSize );
+        int last_buffer_index = mBuffers.size() - 1;
+        for ( int i = 0; i < last_buffer_index; i++ ) {
+            func( mBuffers[ i ], mBuffers[ i ] + mBufferSize );
+        }
+        func( mBuffers[ last_buffer_index ], mBuffers[ last_buffer_index ] + mEnd % mBufferSize );
     }
 
-    uint16_t send( int fd, const sockaddr *dest, socklen_t dest_length, int flags = 0 ) const;
+    uint16_t   send( int fd, const sockaddr *dest, socklen_t dest_length, int flags = 0 ) const;
     PacketData get() const;
 
     struct MessageHeader {
@@ -169,14 +169,14 @@ public:
 
         MessageHeader();
         ~MessageHeader();
-	
+
         void setBuffers( uint16_t size, const std::vector<uint8_t *>, uint16_t buffer_size );
         void setDestination( const sockaddr *dest, uint16_t len );
     };
 
     uint16_t getBufferSize() const
     {
-	return mBufferSize;
+        return mBufferSize;
     }
 };
 
