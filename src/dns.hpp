@@ -56,6 +56,7 @@ namespace dns
     const Type       TYPE_NSEC3      = 50;
     const Type       TYPE_NSEC3PARAM = 51;
     const Type       TYPE_TLSA       = 52;
+    const Type       TYPE_ZONEMD     = 63;
     const Type       TYPE_SPF        = 99;
     const Type       TYPE_TKEY       = 249;
     const Type       TYPE_TSIG       = 250;
@@ -1350,6 +1351,43 @@ namespace dns
         {
             return new RecordNXT( getNextDomainname(), getTypes() );
         }
+    };
+
+    class RecordZONEMD : public RDATA
+    {
+    private:
+	uint32_t mSerial;
+	uint8_t  mScheme;
+	uint8_t  mHashAlgorithm;
+	std::vector<uint8_t> mDigest;
+    public:
+        RecordZONEMD( uint32_t serial, uint8_t scheme, uint8_t algo, const std::vector<uint8_t> &digest )
+	    : mSerial( serial ), mScheme( scheme ), mHashAlgorithm( algo ), mDigest( digest )
+        {
+        }
+
+        virtual std::string toZone() const;
+        virtual std::string toString() const;
+
+        virtual void     outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const;
+        virtual void     outputCanonicalWireFormat( WireFormat &message ) const;
+        virtual uint32_t size() const;
+        virtual uint32_t size( OffsetDB &offset_db, uint32_t begin ) const
+        {
+            return size();
+        }
+        virtual uint16_t type() const
+        {
+            return TYPE_ZONEMD;
+        }
+        virtual RecordZONEMD *clone() const
+        {
+            return new RecordZONEMD( mSerial, mScheme, mHashAlgorithm, mDigest );
+        }
+        static RDATAPtr parse( const uint8_t *packet_begin,
+                               const uint8_t *packet_end,
+                               const uint8_t *rdata_begin,
+                               const uint8_t *rdata_end );
     };
 
     class OptPseudoRROption

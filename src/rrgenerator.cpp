@@ -547,6 +547,20 @@ namespace dns
     }
 
     /**********************************************************
+     * ZONEMDGenarator
+     **********************************************************/
+    std::shared_ptr<RDATA> ZONEMDGenerator::generate( const MessageInfo &hint1, const Domainname &hint2 )
+    {
+        return generate();
+    }
+
+    std::shared_ptr<RDATA> ZONEMDGenerator::generate()
+    {
+        return std::shared_ptr<RDATA>(
+            new RecordZONEMD( getRandom( 0xffffffff ), getRandom( 0xff ), getRandom( 0xff ), getRandomSizeStream( 0x01ff ) ) );
+    }
+
+    /**********************************************************
      * SIGGenarator
      **********************************************************/
     std::shared_ptr<RDATA> SIGGenerator::generate( const MessageInfo &hint1, const Domainname &hint2 )
@@ -715,6 +729,7 @@ namespace dns
         mGenerators.push_back( std::shared_ptr<RDATAGeneratable>( new NSEC3Generator ) );
         mGenerators.push_back( std::shared_ptr<RDATAGeneratable>( new NSEC3PARAMGenerator ) );
         mGenerators.push_back( std::shared_ptr<RDATAGeneratable>( new TLSAGenerator ) );
+        mGenerators.push_back( std::shared_ptr<RDATAGeneratable>( new ZONEMDGenerator ) );
         mGenerators.push_back( std::shared_ptr<RDATAGeneratable>( new SIGGenerator ) );
         mGenerators.push_back( std::shared_ptr<RDATAGeneratable>( new KEYGenerator ) );
         mGenerators.push_back( std::shared_ptr<RDATAGeneratable>( new NXTGenerator ) );

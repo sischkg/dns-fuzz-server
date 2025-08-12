@@ -188,6 +188,13 @@ namespace dns
         std::shared_ptr<RDATA> generate();
     };
 
+    class ZONEMDGenerator : public RDATAGeneratable
+    {
+    public:
+        std::shared_ptr<RDATA> generate( const MessageInfo &hint1, const Domainname &hint2 );
+        std::shared_ptr<RDATA> generate();
+    };
+    
     class TKEYGenerator : public RDATAGeneratable
     {
     public:

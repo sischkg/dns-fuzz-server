@@ -509,6 +509,9 @@ namespace dns
         case TYPE_TLSA:
             res = "TLSA";
             break;
+        case TYPE_ZONEMD:
+            res = "ZONEMD";
+            break;
         case TYPE_TSIG:
             res = "TSIG";
             break;
@@ -620,6 +623,8 @@ namespace dns
             return TYPE_NSEC3PARAM;
         if ( t == "TLSA" )
             return TYPE_TLSA;
+        if ( t == "ZONEMD" )
+            return TYPE_ZONEMD;
         if ( t == "TSIG" )
             return TYPE_TSIG;
         if ( t == "TKEY" )
@@ -2151,6 +2156,61 @@ namespace dns
         PacketData data;
         data.insert( data.end(), pos, packet_end );
         return RDATAPtr( new RecordTLSA( usage, selector, matching_type, data ) );
+    }
+
+    std::string RecordZONEMD::toZone() const
+    {
+        return toString();
+    }
+
+    std::string RecordZONEMD::toString() const
+    {
+        std::string data;
+        encodeToBase64( mDigest, data );
+
+        std::stringstream os;
+        os << (uint32_t)mSerial << " " << (uint32_t)mScheme << " " << (uint32_t)mHashAlgorithm << " " << data;
+
+        return os.str();
+    }
+
+    void RecordZONEMD::outputWireFormat( WireFormat &message, OffsetDB &offset_db ) const
+    {
+        outputCanonicalWireFormat( message );
+    }
+
+    void RecordZONEMD::outputCanonicalWireFormat( WireFormat &message ) const
+    {
+        message.pushUInt32( mSerial );
+        message.pushUInt8( mScheme );
+        message.pushUInt8( mHashAlgorithm );
+        message.pushBuffer( mDigest );
+    }
+
+    uint32_t RecordZONEMD::size() const
+    {
+        return + 4              // serial
+               + 1             // scheme
+               + 1             // hash algorithm
+               + mDigest.size(); // digest
+    }
+
+    RDATAPtr RecordZONEMD::parse( const uint8_t *packet_begin,
+                                  const uint8_t *packet_end,
+                                  const uint8_t *rdata_begin,
+                                  const uint8_t *rdata_end )
+    {
+        if ( rdata_end - rdata_begin < 4 + 1 + 1 + 1 ) {
+            throw FormatError( "too few size for ZONEMD" );
+        }
+        const uint8_t *pos     = rdata_begin;
+        uint32_t       serial  = get_bytes<uint32_t>( &pos );
+        uint8_t        scheme  = get_bytes<uint8_t>( &pos );
+        uint8_t        algo    = get_bytes<uint8_t>( &pos );
+
+        PacketData digest;
+        digest.insert( digest.end(), pos, packet_end );
+        return RDATAPtr( new RecordZONEMD( serial, scheme, algo, digest ) );
     }
 
     std::string RecordOptionsData::toString() const
