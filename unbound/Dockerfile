@@ -59,6 +59,8 @@ COPY --from=builder /usr/local/sbin/unbound-control /usr/local/sbin/unbound-cont
 #COPY ./etc/unbound/unbound_server.pem  /etc/unbound/unbound_server.pem
 #COPY ./etc/unbound/unbound_server.key  /etc/unbound/unbound_server.key
 
+EXPOSE 53/udp 53/tcp 80/tcp 853/tcp 443/tcp
+
 ENTRYPOINT ["/usr/local/sbin/unbound", "-d", "-c", "/etc/unbound/unbound.conf"]
 
 
